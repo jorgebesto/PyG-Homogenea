@@ -98,10 +98,42 @@ footer{
     color:#aaa;
 }
 
-@media(max-width:900px){
+/* ===== AJUSTES SOLO MOVIL ===== */
+@media(max-width:768px){
+
+    .grafica-box{
+        height:300px;
+    }
+
+    #threeContainer{
+        min-height:300px;
+    }
+
+    #contenidoPrincipal.modo-movil .graficas-container,
+    #contenidoPrincipal.modo-movil .resultado,
+    #contenidoPrincipal.modo-movil #volverBtn{
+        display:none;
+    }
+
+    #contenidoPrincipal.mostrar-resultados .panel{
+        display:none;
+    }
+
+    #contenidoPrincipal.mostrar-resultados .graficas-container,
+    #contenidoPrincipal.mostrar-resultados .resultado{
+        display:flex;
+        flex-direction:column;
+    }
+
+    #contenidoPrincipal.mostrar-resultados #volverBtn{
+        display:inline-block;
+        margin-bottom:15px;
+    }
+
     .graficas-container{
         flex-direction:column;
     }
+
     .divisor{
         display:none;
     }
@@ -111,6 +143,8 @@ footer{
 <body>
 
 <header>Simulador Gravitacional</header>
+
+<div id="contenidoPrincipal">
 
 <div class="panel">
 ρ (kg/m³): <input id="densidad" type="number">
@@ -136,6 +170,8 @@ Velocidad:
 Resultado aparecerá aquí
 </div>
 
+<button id="volverBtn" onclick="volverFormulario()">Volver</button>
+
 <div class="graficas-container">
 <div class="grafica-box">
 <div class="titulo-grafica">Gráfica 2D</div>
@@ -148,6 +184,8 @@ Resultado aparecerá aquí
 <div class="titulo-grafica">Visualización 3D</div>
 <div id="threeContainer"></div>
 </div>
+</div>
+
 </div>
 
 <footer>
@@ -164,6 +202,32 @@ let scene,camera,renderer,sphere,punto,controls;
 let animando=false;
 let angulo=0;
 let parametros=null;
+
+/* ===== DETECTAR MOVIL ===== */
+function esMovil(){
+    return window.innerWidth <= 768;
+}
+
+function activarModoMovil(){
+    if(esMovil()){
+        contenidoPrincipal.classList.add("modo-movil");
+    }
+}
+
+function mostrarResultadosMovil(){
+    if(esMovil()){
+        contenidoPrincipal.classList.remove("modo-movil");
+        contenidoPrincipal.classList.add("mostrar-resultados");
+    }
+}
+
+function volverFormulario(){
+    contenidoPrincipal.classList.remove("mostrar-resultados");
+    contenidoPrincipal.classList.add("modo-movil");
+}
+
+window.addEventListener("load",activarModoMovil);
+window.addEventListener("resize",activarModoMovil);
 
 /* ===== TIERRA ===== */
 function usarTierra(){
@@ -215,13 +279,13 @@ function calcular(){
     actualizarResultado(r_val);
     generarGrafica();
     crearEscena3D();
+    mostrarResultadosMovil();
 }
 
 /* ===== RESULTADO GRANDE ===== */
 function actualizarResultado(r_actual){
 
     const {rho,R}=parametros;
-
     let resultado=valorFisico(r_actual,rho,R);
 
     if(modo.value==="Gravedad"){
@@ -233,7 +297,6 @@ function actualizarResultado(r_actual){
     }
 }
 
-/* ===== CAMBIO DE MODO AUTOMÁTICO ===== */
 modo.addEventListener("change",()=>{
     if(parametros){
         actualizarResultado(parametros.r);
@@ -307,6 +370,15 @@ function crearEscena3D(){
     renderer.setPixelRatio(window.devicePixelRatio);
     threeContainer.appendChild(renderer.domElement);
 
+    window.addEventListener("resize",()=>{
+        camera.aspect=threeContainer.clientWidth/
+                      threeContainer.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(
+            threeContainer.clientWidth,
+            threeContainer.clientHeight);
+    });
+
     controls=new THREE.OrbitControls(camera,renderer.domElement);
 
     const light=new THREE.PointLight(0xffffff,1.5);
@@ -349,7 +421,6 @@ function crearEscena3D(){
             punto.position.x=escala*Math.cos(angulo);
             punto.position.z=escala*Math.sin(angulo);
 
-            /* actualizar 2D */
             chart.data.datasets[1].data[0].x=r_anim;
             chart.data.datasets[1].data[0].y=
                 valorFisico(r_anim,rho,R);
@@ -365,7 +436,6 @@ function crearEscena3D(){
     render();
 }
 
-/* ===== ANIMAR ===== */
 function toggleAnim(){
     animando=!animando;
 }
