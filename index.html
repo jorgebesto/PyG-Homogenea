@@ -91,12 +91,33 @@ width:3px;
 background:linear-gradient(#00eaff,#0077ff);
 }
 
+/* FOOTER MEJORADO (SOLO ESTA PARTE ES NUEVA) */
+
 footer{
+margin-top:auto;
+padding:25px 10px;
+background:#0b1120;
+border-top:1px solid rgba(255,255,255,0.08);
 text-align:center;
-padding:12px;
-background:#111827;
-font-size:13px;
-color:#aaa;
+}
+
+.creditos{
+max-width:800px;
+margin:auto;
+line-height:1.6;
+font-size:14px;
+color:#cbd5e1;
+}
+
+.creditos strong{
+color:#00eaff;
+}
+
+.creditos .titulo{
+font-size:16px;
+font-weight:bold;
+margin-bottom:8px;
+color:white;
 }
 
 .mobile-controls{
@@ -210,8 +231,39 @@ Resultado aparecerá aquí
 </div>
 
 <footer>
-Autor: Jorge Enrique Suarez Silva<br>
-Universidad Francisco Jose de Caldas
+
+<div class="creditos">
+
+<div class="titulo">Simulador Gravitacional</div>
+
+<div>
+<strong>Autor del código:</strong><br>
+Jorge Enrique Suarez Silva
+</div>
+
+<br>
+
+<div>
+<strong>Universidad:</strong><br>
+Universidad Francisco José de Caldas
+</div>
+
+<br>
+
+<div>
+<strong>Asignatura:</strong><br>
+Geodesia Física
+</div>
+
+<br>
+
+<div>
+<strong>Reconocimiento especial:</strong><br>
+Luis Fernando Gómez
+</div>
+
+</div>
+
 </footer>
 
 <script>
@@ -370,8 +422,6 @@ plugins:{legend:{display:false}}
 
 }
 
-/* SOLO SE MODIFICÓ ESTA FUNCIÓN */
-
 function crearEscena3D(){
 
 const {rho,R,r_max}=parametros;
@@ -383,7 +433,6 @@ scene=new THREE.Scene();
 let width=threeContainer.clientWidth;
 let height=threeContainer.clientHeight;
 
-/* arreglo para teléfono */
 if(width===0) width=350;
 if(height===0) height=300;
 
