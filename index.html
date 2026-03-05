@@ -24,63 +24,42 @@ header{
     background:#111827;
 }
 
-/* ===== FORMULARIO ===== */
+/* ====== FORMULARIO (DESKTOP ORIGINAL) ====== */
 .panel{
     padding:20px;
     display:flex;
-    flex-direction:column;
-    gap:18px;
+    flex-wrap:wrap;
+    gap:15px;
     background:#0f172a;
-    max-width:500px;
-    margin:20px auto;
-    border-radius:15px;
+    justify-content:center;
 }
 
-.grupo{
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-}
-
-.grupo label{
-    font-size:14px;
-    font-weight:bold;
-    color:#8bdcff;
-}
-
-.grupo input,
-.grupo select{
-    padding:10px;
-    border-radius:8px;
+.panel input,
+.panel select{
+    padding:6px;
+    border-radius:6px;
     border:none;
     background:#1e293b;
     color:white;
 }
 
-.botones{
-    display:flex;
-    gap:10px;
-}
-
-.botones button{
-    flex:1;
-    padding:10px;
+.panel button{
+    padding:6px 10px;
     border:none;
-    border-radius:8px;
+    border-radius:6px;
     background:linear-gradient(90deg,#00eaff,#0077ff);
     font-weight:bold;
     cursor:pointer;
 }
 
-/* ===== RESULTADO ===== */
 .resultado{
     text-align:center;
-    font-size:28px;
-    margin:15px;
+    font-size:22px;
+    margin:10px;
     color:#00eaff;
 }
 
-/* ===== GRAFICAS ===== */
+/* ====== GRAFICAS DESKTOP (ORIGINAL LADO A LADO) ====== */
 .graficas-container{
     display:flex;
     gap:20px;
@@ -89,7 +68,7 @@ header{
 
 .grafica-box{
     flex:1;
-    height:300px;   /* 🔥 ALTURA FIJA */
+    height:350px;
     background:#111827;
     border-radius:12px;
     display:flex;
@@ -99,27 +78,9 @@ header{
 
 .titulo-grafica{
     text-align:center;
-    padding:8px;
+    padding:6px;
     font-weight:bold;
     background:linear-gradient(90deg,#00eaff,#0077ff);
-}
-
-.expandir{
-    position:absolute;
-    top:8px;
-    right:8px;
-    background:#00eaff;
-    border:none;
-    padding:5px 8px;
-    border-radius:6px;
-    cursor:pointer;
-    font-size:12px;
-    font-weight:bold;
-}
-
-#grafica{
-    height:100% !important;
-    width:100% !important;
 }
 
 canvas,#threeContainer{
@@ -131,49 +92,40 @@ canvas,#threeContainer{
     background:linear-gradient(#00eaff,#0077ff);
 }
 
-/* ===== MODAL EXPANSION ===== */
-.modal{
+/* ====== BOTON VOLVER (SOLO MOVIL) ====== */
+#volverBtn{
     display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,0.9);
-    z-index:1000;
-    justify-content:center;
-    align-items:center;
-    flex-direction:column;
-}
-
-.modal-content{
-    width:95%;
-    height:85%;
-    background:#111827;
-    border-radius:12px;
-    display:flex;
-    flex-direction:column;
-}
-
-.cerrar{
-    background:red;
+    margin:10px auto;
+    padding:8px 14px;
+    background:#ff4444;
     border:none;
+    border-radius:8px;
     color:white;
-    padding:6px 10px;
-    margin:10px;
-    border-radius:6px;
-    cursor:pointer;
+    font-weight:bold;
 }
 
-.modal canvas,
-.modal #threeContainerExpandido{
-    flex:1;
-}
-
-/* ===== MOVIL ===== */
+/* ================= MOBILE ================= */
 @media(max-width:768px){
+
     .graficas-container{
         flex-direction:column;
+        display:none;   /* 🔥 ocultas al inicio */
     }
+
     .divisor{
         display:none;
+    }
+
+    .grafica-box{
+        height:300px;   /* 🔥 altura fija */
+    }
+
+    .resultado{
+        display:none;   /* oculto hasta calcular */
+    }
+
+    #volverBtn{
+        display:block;
     }
 }
 </style>
@@ -183,57 +135,33 @@ canvas,#threeContainer{
 <header>Simulador Gravitacional</header>
 
 <div class="panel">
+<input id="densidad" type="number" placeholder="Densidad">
+<input id="radio" type="number" placeholder="Radio">
+<input id="r" type="number" placeholder="Distancia">
+<input id="rmax" type="number" placeholder="r_max" value="100000000">
 
-<div class="grupo">
-<label>Densidad ρ (kg/m³)</label>
-<input id="densidad" type="number">
-</div>
-
-<div class="grupo">
-<label>Radio R (m)</label>
-<input id="radio" type="number">
-</div>
-
-<div class="grupo">
-<label>Distancia r (m)</label>
-<input id="r" type="number">
-</div>
-
-<div class="grupo">
-<label>r_max (m)</label>
-<input id="rmax" type="number" value="100000000">
-</div>
-
-<div class="grupo">
-<label>Modo</label>
 <select id="modo">
 <option>Potencial</option>
 <option>Gravedad</option>
 </select>
-</div>
 
-<div class="grupo">
-<label>Velocidad</label>
 <input id="velocidad" type="range" min="0.001" max="0.05" step="0.001" value="0.01">
-</div>
 
-<div class="botones">
 <button onclick="usarTierra()">Tierra</button>
 <button onclick="calcular()">Calcular</button>
 <button onclick="toggleAnim()">Animar</button>
 </div>
 
-</div>
+<button id="volverBtn" onclick="volverFormulario()">Volver</button>
 
 <div class="resultado" id="resultadoBox">
 Resultado aparecerá aquí
 </div>
 
-<div class="graficas-container">
+<div class="graficas-container" id="graficasContainer">
 
 <div class="grafica-box">
 <div class="titulo-grafica">Gráfica 2D</div>
-<button class="expandir" onclick="expandir2D()">⛶</button>
 <canvas id="grafica"></canvas>
 </div>
 
@@ -241,26 +169,22 @@ Resultado aparecerá aquí
 
 <div class="grafica-box">
 <div class="titulo-grafica">Visualización 3D</div>
-<button class="expandir" onclick="expandir3D()">⛶</button>
 <div id="threeContainer"></div>
 </div>
 
 </div>
 
-<!-- MODAL -->
-<div class="modal" id="modal">
-<button class="cerrar" onclick="cerrarModal()">Cerrar</button>
-<div class="modal-content" id="modalContenido"></div>
-</div>
-
 <script>
-
 const G=6.674e-11;
 let chart;
 let scene,camera,renderer,sphere,punto,controls;
 let parametros=null;
 let animando=false;
 let angulo=0;
+
+function esMovil(){
+return window.innerWidth<=768;
+}
 
 function usarTierra(){
 densidad.value=5515;
@@ -283,15 +207,35 @@ return -G*M/r;
 }
 
 function calcular(){
+
 let rho=parseFloat(densidad.value);
 let R=parseFloat(radio.value);
 let r_val=parseFloat(r.value);
 let r_max=parseFloat(rmax.value);
-if(!rho||!R||!r_val||!r_max){alert("Completa los valores");return;}
+
+if(!rho||!R||!r_val||!r_max){
+alert("Completa los valores");
+return;
+}
+
 parametros={rho,R,r:r_val,r_max};
+
 actualizarResultado(r_val);
 generarGrafica();
 crearEscena3D();
+
+/* 🔥 SOLO EN MOVIL */
+if(esMovil()){
+document.querySelector(".panel").style.display="none";
+graficasContainer.style.display="flex";
+resultadoBox.style.display="block";
+}
+}
+
+function volverFormulario(){
+document.querySelector(".panel").style.display="flex";
+graficasContainer.style.display="none";
+resultadoBox.style.display="none";
 }
 
 function actualizarResultado(r_actual){
@@ -303,13 +247,16 @@ resultadoBox.innerHTML=
 }
 
 function generarGrafica(){
+
 let {rho,R,r,r_max}=parametros;
 let datos=[],valores=[];
-for(let i=0;i<=500;i++){
-let x=i*(r_max)/500;
+
+for(let i=0;i<=400;i++){
+let x=i*(r_max)/400;
 datos.push(x);
 valores.push(valorFisico(x,rho,R));
 }
+
 if(chart) chart.destroy();
 
 chart=new Chart(grafica,{
@@ -346,14 +293,19 @@ plugins:{legend:{display:false}}
 }
 
 function crearEscena3D(){
-let {rho,R,r_max}=parametros;
+
 threeContainer.innerHTML="";
+
 scene=new THREE.Scene();
-camera=new THREE.PerspectiveCamera(60,1,0.1,1000);
+
+let width=threeContainer.clientWidth;
+let height=threeContainer.clientHeight;
+
+camera=new THREE.PerspectiveCamera(60,width/height,0.1,1000);
 renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(300,250);
-renderer.setPixelRatio(1);
+renderer.setSize(width,height);
 threeContainer.appendChild(renderer.domElement);
+
 controls=new THREE.OrbitControls(camera,renderer.domElement);
 
 let light=new THREE.PointLight(0xffffff,1.5);
@@ -366,68 +318,46 @@ new THREE.MeshPhongMaterial({color:0x0077ff})
 );
 scene.add(sphere);
 
+punto=new THREE.Mesh(
+new THREE.SphereGeometry(0.25,32,32),
+new THREE.MeshBasicMaterial({color:0xff0000})
+);
+scene.add(punto);
+
 camera.position.set(8,6,8);
 
 function render(){
 requestAnimationFrame(render);
-sphere.rotation.y+=0.003;
+
+if(animando){
+let vel=parseFloat(velocidad.value);
+angulo+=vel;
+
+let {rho,R,r_max}=parametros;
+
+let r_anim=Math.abs(Math.sin(angulo))*r_max;
+let escala=6*(r_anim/r_max);
+
+punto.position.x=escala*Math.cos(angulo);
+punto.position.z=escala*Math.sin(angulo);
+
+chart.data.datasets[1].data[0].x=r_anim;
+chart.data.datasets[1].data[0].y=
+valorFisico(r_anim,rho,R);
+chart.update("none");
+
+actualizarResultado(r_anim);
+}
+
+controls.update();
 renderer.render(scene,camera);
 }
 render();
 }
 
-function toggleAnim(){animando=!animando;}
-
-/* ===== EXPANDIR ===== */
-function expandir2D(){
-modal.style.display="flex";
-modalContenido.innerHTML="";
-let nuevoCanvas=document.createElement("canvas");
-nuevoCanvas.style.height="100%";
-nuevoCanvas.style.width="100%";
-modalContenido.appendChild(nuevoCanvas);
-new Chart(nuevoCanvas,chart.config);
+function toggleAnim(){
+animando=!animando;
 }
-
-function expandir3D(){
-modal.style.display="flex";
-modalContenido.innerHTML="";
-let cont=document.createElement("div");
-cont.id="threeContainerExpandido";
-cont.style.flex="1";
-modalContenido.appendChild(cont);
-
-let escena=new THREE.Scene();
-let cam=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,1000);
-let rend=new THREE.WebGLRenderer({antialias:true});
-rend.setSize(window.innerWidth*0.9,window.innerHeight*0.7);
-cont.appendChild(rend.domElement);
-
-let luz=new THREE.PointLight(0xffffff,1.5);
-luz.position.set(10,10,10);
-escena.add(luz);
-
-let esfera=new THREE.Mesh(
-new THREE.SphereGeometry(3,64,64),
-new THREE.MeshPhongMaterial({color:0x00eaff})
-);
-escena.add(esfera);
-
-cam.position.set(8,6,8);
-
-function anim(){
-requestAnimationFrame(anim);
-esfera.rotation.y+=0.003;
-rend.render(escena,cam);
-}
-anim();
-}
-
-function cerrarModal(){
-modal.style.display="none";
-modalContenido.innerHTML="";
-}
-
 </script>
 </body>
 </html>
