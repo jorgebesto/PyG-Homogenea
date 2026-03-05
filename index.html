@@ -24,7 +24,7 @@ header{
     background:#111827;
 }
 
-/* ===== FORMULARIO (DESKTOP INTACTO) ===== */
+/* ===== FORMULARIO (NO TOCADO) ===== */
 .panel{
     padding:20px;
     display:flex;
@@ -59,7 +59,7 @@ header{
     color:#00eaff;
 }
 
-/* ===== GRAFICAS DESKTOP ===== */
+/* ===== GRAFICAS DESKTOP (INTACTO) ===== */
 .graficas-container{
     display:flex;
     gap:20px;
@@ -68,7 +68,7 @@ header{
 
 .grafica-box{
     flex:1;
-    height:350px;
+    height:350px; /* Desktop original */
     background:#111827;
     border-radius:12px;
     display:flex;
@@ -92,18 +92,10 @@ canvas,#threeContainer{
     background:linear-gradient(#00eaff,#0077ff);
 }
 
-/* ===== BOTON ANIMAR SOLO MOVIL ===== */
-#animarMovil{
-    display:none;
-    margin:10px auto;
-    padding:8px 14px;
-    background:#00eaff;
-    border:none;
-    border-radius:8px;
-    font-weight:bold;
-}
+/* ===================== */
+/* ===== SOLO MOVIL ===== */
+/* ===================== */
 
-/* ===== MOBILE ===== */
 @media(max-width:768px){
 
     .graficas-container{
@@ -115,16 +107,26 @@ canvas,#threeContainer{
         display:none;
     }
 
+    /* 🔒 BLOQUEO DEFINITIVO DE ALTURA */
     .grafica-box{
-        height:300px;
+        height:300px !important;
+        max-height:300px !important;
+        min-height:300px !important;
+        flex:none !important;
+    }
+
+    #grafica{
+        height:100% !important;
+        max-height:100% !important;
+    }
+
+    #threeContainer{
+        height:100% !important;
+        max-height:100% !important;
     }
 
     .resultado{
         display:none;
-    }
-
-    #animarMovil{
-        display:block;
     }
 }
 </style>
@@ -155,8 +157,6 @@ canvas,#threeContainer{
 Resultado aparecerá aquí
 </div>
 
-<button id="animarMovil" onclick="toggleAnim()">Animar</button>
-
 <div class="graficas-container" id="graficasContainer">
 
 <div class="grafica-box">
@@ -180,12 +180,10 @@ let parametros=null;
 let animando=false;
 let angulo=0;
 
-/* ========= DETECTOR ========= */
 function esMovil(){
 return window.innerWidth<=768;
 }
 
-/* ========= LOGICA FISICA ========= */
 function usarTierra(){
 densidad.value=5515;
 radio.value=6378137;
@@ -214,7 +212,6 @@ generarGrafica();
 }
 
 function calcular(){
-
 let rho=parseFloat(densidad.value);
 let R=parseFloat(radio.value);
 let r_val=parseFloat(r.value);
@@ -231,7 +228,6 @@ actualizarResultado(r_val);
 generarGrafica();
 crearEscena3D();
 
-/* SOLO MOVIL */
 if(esMovil()){
 document.querySelector(".panel").style.display="none";
 graficasContainer.style.display="flex";
@@ -247,7 +243,6 @@ resultadoBox.innerHTML=
 +resultado.toExponential(5);
 }
 
-/* ========= GRAFICA ========= */
 function generarGrafica(){
 
 let {rho,R,r,r_max}=parametros;
@@ -298,7 +293,6 @@ plugins:{legend:{display:false}}
 });
 }
 
-/* ========= 3D AISLADO ========= */
 function crearEscena3D(){
 
 const container=document.getElementById("threeContainer");
@@ -334,48 +328,11 @@ new THREE.MeshPhongMaterial({map:earthTexture})
 );
 scene.add(sphere);
 
-let punto=new THREE.Mesh(
-new THREE.SphereGeometry(0.25,32,32),
-new THREE.MeshBasicMaterial({color:0xff0000})
-);
-scene.add(punto);
-
 camera.position.set(8,6,8);
-
-/* Resize aislado */
-window.addEventListener("resize",()=>{
-let w=container.offsetWidth;
-let h=container.offsetHeight;
-camera.aspect=w/h;
-camera.updateProjectionMatrix();
-renderer.setSize(w,h);
-});
 
 function render(){
 requestAnimationFrame(render);
-
 sphere.rotation.y+=0.002;
-
-if(animando && parametros){
-let vel=parseFloat(velocidad.value);
-angulo+=vel;
-
-let {rho,R,r_max}=parametros;
-
-let r_anim=Math.abs(Math.sin(angulo))*r_max;
-let escala=6*(r_anim/r_max);
-
-punto.position.x=escala*Math.cos(angulo);
-punto.position.z=escala*Math.sin(angulo);
-
-chart.data.datasets[1].data[0].x=r_anim;
-chart.data.datasets[1].data[0].y=
-valorFisico(r_anim,rho,R);
-chart.update("none");
-
-actualizarResultado(r_anim);
-}
-
 controls.update();
 renderer.render(scene,camera);
 }
@@ -386,5 +343,6 @@ function toggleAnim(){
 animando=!animando;
 }
 </script>
+
 </body>
 </html>
