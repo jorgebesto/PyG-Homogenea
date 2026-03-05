@@ -99,15 +99,9 @@ font-size:13px;
 color:#aaa;
 }
 
-/* BOTONES SOLO MOVIL */
-
 .mobile-controls{
 display:none;
 }
-
-/* ================= */
-/* ===== MOVIL ===== */
-/* ================= */
 
 @media(max-width:768px){
 
@@ -124,8 +118,6 @@ display:none;
 .divisor{
 display:none;
 }
-
-/* evitar que grafica crezca infinito */
 
 .grafica-box{
 height:300px !important;
@@ -145,8 +137,6 @@ height:100% !important;
 display:none;
 font-size:22px;
 }
-
-/* botones movil */
 
 .mobile-controls{
 display:flex;
@@ -292,11 +282,9 @@ generarGrafica();
 crearEscena3D();
 
 if(esMovil()){
-
 document.querySelector(".panel").style.display="none";
 graficasContainer.style.display="flex";
 resultadoBox.style.display="block";
-
 }
 
 }
@@ -382,6 +370,8 @@ plugins:{legend:{display:false}}
 
 }
 
+/* SOLO SE MODIFICÓ ESTA FUNCIÓN */
+
 function crearEscena3D(){
 
 const {rho,R,r_max}=parametros;
@@ -390,20 +380,17 @@ threeContainer.innerHTML="";
 
 scene=new THREE.Scene();
 
-camera=new THREE.PerspectiveCamera(
-60,
-threeContainer.clientWidth/threeContainer.clientHeight,
-0.1,
-1000
-);
+let width=threeContainer.clientWidth;
+let height=threeContainer.clientHeight;
+
+/* arreglo para teléfono */
+if(width===0) width=350;
+if(height===0) height=300;
+
+camera=new THREE.PerspectiveCamera(60,width/height,0.1,1000);
 
 renderer=new THREE.WebGLRenderer({antialias:true});
-
-renderer.setSize(
-threeContainer.clientWidth,
-threeContainer.clientHeight
-);
-
+renderer.setSize(width,height);
 renderer.setPixelRatio(window.devicePixelRatio);
 
 threeContainer.appendChild(renderer.domElement);
@@ -443,11 +430,9 @@ sphere.rotation.y+=0.002;
 if(animando){
 
 let vel=parseFloat(velocidad.value);
-
 angulo+=vel;
 
 let r_anim=Math.abs(Math.sin(angulo))*r_max;
-
 let escala=6*(r_anim/r_max);
 
 punto.position.x=escala*Math.cos(angulo);
@@ -459,7 +444,6 @@ chart.data.datasets[1].data[0].y=valorFisico(r_anim,rho,R);
 chart.update("none");
 
 actualizarResultado(r_anim);
-
 }
 
 controls.update();
