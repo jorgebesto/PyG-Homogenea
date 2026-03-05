@@ -24,7 +24,7 @@ header{
     background:#111827;
 }
 
-/* ====== FORMULARIO (DESKTOP ORIGINAL) ====== */
+/* ===== FORMULARIO (NO TOCADO) ===== */
 .panel{
     padding:20px;
     display:flex;
@@ -59,7 +59,7 @@ header{
     color:#00eaff;
 }
 
-/* ====== GRAFICAS DESKTOP (ORIGINAL LADO A LADO) ====== */
+/* ===== GRAFICAS DESKTOP (NO TOCADO) ===== */
 .graficas-container{
     display:flex;
     gap:20px;
@@ -92,24 +92,23 @@ canvas,#threeContainer{
     background:linear-gradient(#00eaff,#0077ff);
 }
 
-/* ====== BOTON VOLVER (SOLO MOVIL) ====== */
-#volverBtn{
+/* ===== BOTON ANIMAR MOVIL ===== */
+#animarMovil{
     display:none;
     margin:10px auto;
     padding:8px 14px;
-    background:#ff4444;
+    background:#00eaff;
     border:none;
     border-radius:8px;
-    color:white;
     font-weight:bold;
 }
 
-/* ================= MOBILE ================= */
+/* ===== MOBILE ===== */
 @media(max-width:768px){
 
     .graficas-container{
         flex-direction:column;
-        display:none;   /* 🔥 ocultas al inicio */
+        display:none;
     }
 
     .divisor{
@@ -117,14 +116,14 @@ canvas,#threeContainer{
     }
 
     .grafica-box{
-        height:300px;   /* 🔥 altura fija */
+        height:300px;
     }
 
     .resultado{
-        display:none;   /* oculto hasta calcular */
+        display:none;
     }
 
-    #volverBtn{
+    #animarMovil{
         display:block;
     }
 }
@@ -140,7 +139,7 @@ canvas,#threeContainer{
 <input id="r" type="number" placeholder="Distancia">
 <input id="rmax" type="number" placeholder="r_max" value="100000000">
 
-<select id="modo">
+<select id="modo" onchange="actualizarModo()">
 <option>Potencial</option>
 <option>Gravedad</option>
 </select>
@@ -152,11 +151,11 @@ canvas,#threeContainer{
 <button onclick="toggleAnim()">Animar</button>
 </div>
 
-<button id="volverBtn" onclick="volverFormulario()">Volver</button>
-
 <div class="resultado" id="resultadoBox">
 Resultado aparecerá aquí
 </div>
+
+<button id="animarMovil" onclick="toggleAnim()">Animar</button>
 
 <div class="graficas-container" id="graficasContainer">
 
@@ -182,8 +181,12 @@ let parametros=null;
 let animando=false;
 let angulo=0;
 
-function esMovil(){
-return window.innerWidth<=768;
+/* ===== ACTUALIZAR AUTOMATICAMENTE AL CAMBIAR MODO ===== */
+function actualizarModo(){
+if(parametros){
+actualizarResultado(parametros.r);
+generarGrafica();
+}
 }
 
 function usarTierra(){
@@ -207,7 +210,6 @@ return -G*M/r;
 }
 
 function calcular(){
-
 let rho=parseFloat(densidad.value);
 let R=parseFloat(radio.value);
 let r_val=parseFloat(r.value);
@@ -224,18 +226,11 @@ actualizarResultado(r_val);
 generarGrafica();
 crearEscena3D();
 
-/* 🔥 SOLO EN MOVIL */
-if(esMovil()){
+if(window.innerWidth<=768){
 document.querySelector(".panel").style.display="none";
 graficasContainer.style.display="flex";
 resultadoBox.style.display="block";
 }
-}
-
-function volverFormulario(){
-document.querySelector(".panel").style.display="flex";
-graficasContainer.style.display="none";
-resultadoBox.style.display="none";
 }
 
 function actualizarResultado(r_actual){
@@ -256,6 +251,9 @@ let x=i*(r_max)/400;
 datos.push(x);
 valores.push(valorFisico(x,rho,R));
 }
+
+let minY=Math.min(...valores);
+let maxY=Math.max(...valores);
 
 if(chart) chart.destroy();
 
@@ -283,8 +281,8 @@ animation:false,
 scales:{
 x:{type:"linear",max:r_max},
 y:{
-min:Math.min(...valores),
-max:Math.max(...valores)
+min:minY,
+max:maxY
 }
 },
 plugins:{legend:{display:false}}
@@ -292,6 +290,7 @@ plugins:{legend:{display:false}}
 });
 }
 
+/* ===== 3D CON TEXTURA REAL DE LA TIERRA ===== */
 function crearEscena3D(){
 
 threeContainer.innerHTML="";
@@ -312,9 +311,14 @@ let light=new THREE.PointLight(0xffffff,1.5);
 light.position.set(10,10,10);
 scene.add(light);
 
+let textureLoader=new THREE.TextureLoader();
+let earthTexture=textureLoader.load(
+"https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg"
+);
+
 sphere=new THREE.Mesh(
 new THREE.SphereGeometry(3,64,64),
-new THREE.MeshPhongMaterial({color:0x0077ff})
+new THREE.MeshPhongMaterial({map:earthTexture})
 );
 scene.add(sphere);
 
@@ -328,6 +332,8 @@ camera.position.set(8,6,8);
 
 function render(){
 requestAnimationFrame(render);
+
+sphere.rotation.y+=0.002;
 
 if(animando){
 let vel=parseFloat(velocidad.value);
