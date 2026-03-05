@@ -12,8 +12,8 @@
 <style>
 body{
     margin:0;
-    background:#0a0f1c;
-    font-family:Arial;
+    background:linear-gradient(180deg,#0a0f1c,#081225);
+    font-family:Arial, Helvetica, sans-serif;
     color:white;
     display:flex;
     flex-direction:column;
@@ -27,41 +27,99 @@ header{
     background:#111827;
 }
 
+/* ===== FORMULARIO ===== */
 .panel{
-    padding:15px;
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    background:#0f172a;
+    max-width:500px;
+    margin:20px auto;
+    border-radius:15px;
+    box-shadow:0 0 20px rgba(0,234,255,0.15);
+}
+
+.grupo{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.grupo label{
+    font-size:14px;
+    font-weight:bold;
+    color:#8bdcff;
+}
+
+.grupo input,
+.grupo select{
+    padding:10px;
+    border-radius:8px;
+    border:none;
+    font-size:14px;
+    background:#1e293b;
+    color:white;
+}
+
+.grupo input:focus,
+.grupo select:focus{
+    outline:2px solid #00eaff;
+}
+
+.botones{
     display:flex;
     flex-wrap:wrap;
     gap:10px;
     justify-content:center;
-    background:#0f172a;
+    margin-top:10px;
 }
 
-input,button,select{
-    padding:6px;
-    border-radius:6px;
+.botones button{
+    flex:1;
+    min-width:120px;
+    padding:10px;
+    border-radius:8px;
     border:none;
-    font-size:14px;
+    font-weight:bold;
+    background:linear-gradient(90deg,#00eaff,#0077ff);
+    color:black;
+    cursor:pointer;
+    transition:0.2s;
 }
 
-button{
+.botones button:hover{
+    transform:scale(1.05);
+}
+
+/* ===== RESULTADO ===== */
+.resultado{
+    text-align:center;
+    font-size:34px;
+    font-weight:bold;
+    margin:20px auto;
+    color:#00eaff;
+    text-shadow:0 0 15px #00eaff;
+    max-width:90%;
+    word-wrap:break-word;
+}
+
+#volverBtn{
+    display:none;
+    margin:10px auto;
+    padding:8px 20px;
+    border-radius:8px;
+    border:none;
     background:#00eaff;
     font-weight:bold;
     cursor:pointer;
 }
 
-.resultado{
-    text-align:center;
-    font-size:34px;
-    font-weight:bold;
-    margin:15px 0;
-    color:#00eaff;
-    text-shadow:0 0 20px #00eaff;
-}
-
+/* ===== GRAFICAS ===== */
 .graficas-container{
     display:flex;
-    gap:15px;
-    padding:15px;
+    gap:20px;
+    padding:20px;
     flex:1;
 }
 
@@ -98,15 +156,32 @@ footer{
     color:#aaa;
 }
 
-/* ===== AJUSTES SOLO MOVIL ===== */
+/* ===== MOVIL ===== */
 @media(max-width:768px){
 
+    .panel{
+        margin:15px;
+    }
+
+    .resultado{
+        font-size:26px;
+    }
+
+    .graficas-container{
+        flex-direction:column;
+        padding:10px;
+    }
+
     .grafica-box{
-        height:300px;
+        height:260px;
     }
 
     #threeContainer{
-        min-height:300px;
+        min-height:260px;
+    }
+
+    .divisor{
+        display:none;
     }
 
     #contenidoPrincipal.modo-movil .graficas-container,
@@ -119,23 +194,8 @@ footer{
         display:none;
     }
 
-    #contenidoPrincipal.mostrar-resultados .graficas-container,
-    #contenidoPrincipal.mostrar-resultados .resultado{
-        display:flex;
-        flex-direction:column;
-    }
-
     #contenidoPrincipal.mostrar-resultados #volverBtn{
-        display:inline-block;
-        margin-bottom:15px;
-    }
-
-    .graficas-container{
-        flex-direction:column;
-    }
-
-    .divisor{
-        display:none;
+        display:block;
     }
 }
 </style>
@@ -147,23 +207,46 @@ footer{
 <div id="contenidoPrincipal">
 
 <div class="panel">
-ρ (kg/m³): <input id="densidad" type="number">
-R (m): <input id="radio" type="number">
-r (m): <input id="r" type="number">
-r_max (m): <input id="rmax" type="number" value="100000000">
 
-Modo:
+<div class="grupo">
+<label>Densidad ρ (kg/m³)</label>
+<input id="densidad" type="number">
+</div>
+
+<div class="grupo">
+<label>Radio del planeta R (m)</label>
+<input id="radio" type="number">
+</div>
+
+<div class="grupo">
+<label>Distancia r (m)</label>
+<input id="r" type="number">
+</div>
+
+<div class="grupo">
+<label>Distancia máxima r_max (m)</label>
+<input id="rmax" type="number" value="100000000">
+</div>
+
+<div class="grupo">
+<label>Modo de cálculo</label>
 <select id="modo">
 <option>Potencial</option>
 <option>Gravedad</option>
 </select>
+</div>
 
-Velocidad:
+<div class="grupo">
+<label>Velocidad de animación</label>
 <input id="velocidad" type="range" min="0.001" max="0.05" step="0.001" value="0.01">
+</div>
 
+<div class="botones">
 <button onclick="usarTierra()">Valores de la Tierra</button>
 <button onclick="calcular()">Calcular</button>
 <button onclick="toggleAnim()">Animar</button>
+</div>
+
 </div>
 
 <div class="resultado" id="resultadoBox">
@@ -203,7 +286,6 @@ let animando=false;
 let angulo=0;
 let parametros=null;
 
-/* ===== DETECTAR MOVIL ===== */
 function esMovil(){
     return window.innerWidth <= 768;
 }
@@ -227,20 +309,16 @@ function volverFormulario(){
 }
 
 window.addEventListener("load",activarModoMovil);
-window.addEventListener("resize",activarModoMovil);
 
-/* ===== TIERRA ===== */
 function usarTierra(){
     densidad.value=5515;
     radio.value=6378137;
 }
 
-/* ===== MASA ===== */
 function masaTotal(rho,R){
     return (4/3)*Math.PI*Math.pow(R,3)*rho;
 }
 
-/* ===== FUNCIÓN FÍSICA ===== */
 function valorFisico(r,rho,R){
 
     let M=masaTotal(rho,R);
@@ -261,7 +339,6 @@ function valorFisico(r,rho,R){
     }
 }
 
-/* ===== CALCULAR ===== */
 function calcular(){
 
     const rho=parseFloat(densidad.value);
@@ -282,7 +359,6 @@ function calcular(){
     mostrarResultadosMovil();
 }
 
-/* ===== RESULTADO GRANDE ===== */
 function actualizarResultado(r_actual){
 
     const {rho,R}=parametros;
@@ -304,7 +380,6 @@ modo.addEventListener("change",()=>{
     }
 });
 
-/* ===== GRÁFICA ===== */
 function generarGrafica(){
 
     const {rho,R,r,r_max}=parametros;
@@ -350,7 +425,6 @@ function generarGrafica(){
     });
 }
 
-/* ===== ESCENA 3D ===== */
 function crearEscena3D(){
 
     const {rho,R,r_max}=parametros;
@@ -367,7 +441,11 @@ function crearEscena3D(){
     renderer.setSize(
         threeContainer.clientWidth,
         threeContainer.clientHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+
+    renderer.setPixelRatio(
+        esMovil()?1:window.devicePixelRatio
+    );
+
     threeContainer.appendChild(renderer.domElement);
 
     window.addEventListener("resize",()=>{
