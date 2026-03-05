@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Simulador Gravitacional 3D</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<style>
+body{
+    margin:0;
+    font-family:Segoe UI;
+    background: radial-gradient(circle at top, #0f2027, #0b0c10 60%);
+    color:white;
+}
+
+header{
+    text-align:center;
+    font-size:26px;
+    font-weight:bold;
+    color:#00eaff;
+    padding:20px;
+}
+
+.panel{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:15px;
+    padding:20px;
+    background:rgba(20,25,35,0.9);
+}
+
+input, select{
+    padding:6px;
+    width:140px;
+    text-align:center;
+    border:none;
+    border-radius:6px;
+}
+
+button{
+    padding:7px 14px;
+    border:none;
+    border-radius:6px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover{ transform:scale(1.05); }
+
+.calc{ background:#1f6feb; color:white;}
+.earth{ background:#2ea043; color:white;}
+.anim{ background:#ff9800; color:white;}
+
+.resultado{
+    text-align:center;
+    font-size:20px;
+    padding:15px;
+    font-weight:bold;
+}
+
+.section{
+    width:100%;
+    padding:30px 5%;
+    box-sizing:border-box;
+}
+
+#grafica{
+    width:100% !important;
+    height:500px !important;
+}
+
+#threeContainer{
+    width:100%;
+    height:600px;
+    border-radius:10px;
+    overflow:hidden;
+    background:black;
+}
+</style>
+</head>
+
+<body>
+
+<header>SIMULADOR GRAVITACIONAL EN ESFERA HOMOGÉNEA</header>
+
+<div class="panel">
+    μ <input type="number" id="mu">
+    R <input type="number" id="R">
+    r <input type="number" id="r">
+    <button class="calc" onclick="calcular()">CALCULAR</button>
+    <button class="earth" onclick="usarTierra()">TIERRA 🌍</button>
+    <button class="anim" onclick="toggleAnim()">ANIMAR</button>
+    <select id="modo">
+        <option value="Potencial">Potencial</option>
+        <option value="Gravedad">Gravedad</option>
+    </select>
+</div>
+
+<div class="resultado" id="resultado">Resultado</div>
+
+<div class="section">
+    <canvas id="grafica"></canvas>
+</div>
+
+<div class="section">
+    <div id="threeContainer"></div>
+</div>
+
+<script>
+const G = 6.6742e-11;
+const DENSIDAD_TIERRA = 5514;
+const RADIO_TIERRA = 6378137;
+
+let chart;
+let animando=false;
+let r_anim=0;
+let direccion=1;
+let R_global=1;
+let M_global=1;
+let modo_global="Potencial";
+
+let scene,camera,renderer,sphere,punto3D;
+
+function usarTierra(){
+    mu.value=DENSIDAD_TIERRA;
+    R.value=RADIO_TIERRA;
+}
+
+function calcularValor(r){
+    if(modo_global==="Potencial"){
+        return r<=R_global?
+        -(G*M_global/(2*R_global**3))*(3*R_global**2-r**2):
+        -G*M_global/r;
+    }else{
+        return r<=R_global?
+        (G*M_global/R_global**3)*r:
+        G*M_global/r**2;
+    }
+}
+
+function calcular(){
+
+    let muVal=parseFloat(mu.value);
+    let R=parseFloat(document.getElementById("R").value);
+    let r=parseFloat(document.getElementById("r").value);
+    let modo=document.getElementById("modo").value;
+
+    if(isNaN(muVal)||isNaN(R)||isNaN(r)){
+        resultado.innerText="Error en datos";
+        return;
+    }
+
+    let M=(4/3)*Math.PI*R**3*muVal;
+
+    R_global=R;
+    M_global=M;
+    modo_global=modo;
+    r_anim=r;
+
+    let datos=[];
+    let valores=[];
+
+    for(let i=1;i<=400;i++){
+        let rr=i*(8*R/400);
+        datos.push(rr);
+        valores.push(calcularValor(rr));
+    }
+
+    let valorActual=calcularValor(r);
+
+    resultado.innerText=
+    (modo==="Potencial"?"V":"g")+
+    "(r) = "+valorActual.toExponential(3);
+
+    crearGrafica(datos,valores,r,valorActual);
+    crearEscena3D(R,r);
+}
+
+function crearGrafica(datos,valores,r,valor){
+
+    if(chart) chart.destroy();
+
+    chart=new Chart(grafica,{
+        type:"line",
+        data:{
+            datasets:[
+                {
+                    label:"Función",
+                    data:datos.map((x,i)=>({x:x,y:valores[i]})),
+                    borderColor:"#00eaff",
+                    borderWidth:3,
+                    pointRadius:0
+                },
+                {
+                    type:"scatter",
+                    label:"Punto",
+                    data:[{x:r,y:valor}],
+                    backgroundColor:"#ff4d4d",
+                    pointRadius:7
+                }
+            ]
+        },
+        options:{
+            animation:false,
+            scales:{
+                x:{type:"linear",title:{display:true,text:"r (m)"}},
+                y:{title:{display:true,text:modo_global}}
+            }
+        }
+    });
+}
+
+function toggleAnim(){
+    animando=!animando;
+    if(animando) animar();
+}
+
+function animar(){
+    if(!animando) return;
+
+    let velocidad=R_global*0.01;
+    r_anim+=direccion*velocidad;
+
+    if(r_anim>=2*R_global) direccion=-1;
+    if(r_anim<=0) direccion=1;
+
+    let valor=calcularValor(r_anim);
+
+    chart.data.datasets[1].data[0]={x:r_anim,y:valor};
+    chart.update();
+
+    let r_visual=(r_anim/R_global)*5;
+    if(punto3D) punto3D.position.x=r_visual;
+
+    requestAnimationFrame(animar);
+}
+
+/* ================== 3D ESCALADO ================== */
+
+function crearEscena3D(R_real, r_real){
+
+    const container=document.getElementById("threeContainer");
+    container.innerHTML="";
+
+    const ESCALA=5;
+
+    scene=new THREE.Scene();
+
+    camera=new THREE.PerspectiveCamera(
+        60,
+        container.clientWidth/container.clientHeight,
+        0.1,
+        1000
+    );
+
+    renderer=new THREE.WebGLRenderer({antialias:true});
+    renderer.setSize(container.clientWidth,container.clientHeight);
+    renderer.setClearColor(0x000000);
+    container.appendChild(renderer.domElement);
+
+    const light=new THREE.PointLight(0xffffff,1.5);
+    light.position.set(10,10,10);
+    scene.add(light);
+
+    const ambient=new THREE.AmbientLight(0x404040);
+    scene.add(ambient);
+
+    const geometry=new THREE.SphereGeometry(ESCALA,64,64);
+    const material=new THREE.MeshPhongMaterial({
+        color:0x2266ff,
+        transparent:true,
+        opacity:0.6
+    });
+
+    sphere=new THREE.Mesh(geometry,material);
+    scene.add(sphere);
+
+    const geoPoint=new THREE.SphereGeometry(ESCALA*0.08,32,32);
+    const matPoint=new THREE.MeshBasicMaterial({color:0xff4d4d});
+    punto3D=new THREE.Mesh(geoPoint,matPoint);
+
+    let r_visual=(r_real/R_real)*ESCALA;
+    punto3D.position.x=r_visual;
+
+    scene.add(punto3D);
+
+    camera.position.z=ESCALA*4;
+
+    function render(){
+        requestAnimationFrame(render);
+        sphere.rotation.y+=0.003;
+        renderer.render(scene,camera);
+    }
+
+    render();
+
+    window.addEventListener("resize",()=>{
+        camera.aspect=container.clientWidth/container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth,container.clientHeight);
+    });
+}
+</script>
+
+</body>
+</html>
