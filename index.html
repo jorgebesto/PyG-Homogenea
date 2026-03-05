@@ -2,185 +2,257 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Simulador Gravitacional 3D</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Gravitacional</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
 
 <style>
 body{
     margin:0;
-    font-family:Segoe UI;
-    background: radial-gradient(circle at top, #0f2027, #0b0c10 60%);
+    background:#0a0f1c;
+    font-family:Arial;
     color:white;
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
 }
 
 header{
     text-align:center;
-    font-size:26px;
-    font-weight:bold;
-    color:#00eaff;
-    padding:20px;
+    padding:15px;
+    font-size:22px;
+    background:#111827;
 }
 
 .panel{
+    padding:15px;
     display:flex;
     flex-wrap:wrap;
+    gap:10px;
     justify-content:center;
-    gap:15px;
-    padding:20px;
-    background:rgba(20,25,35,0.9);
+    background:#0f172a;
 }
 
-input, select{
+input,button,select{
     padding:6px;
-    width:140px;
-    text-align:center;
-    border:none;
     border-radius:6px;
+    border:none;
+    font-size:14px;
 }
 
 button{
-    padding:7px 14px;
-    border:none;
-    border-radius:6px;
+    background:#00eaff;
     font-weight:bold;
     cursor:pointer;
-    transition:0.3s;
 }
-
-button:hover{ transform:scale(1.05); }
-
-.calc{ background:#1f6feb; color:white;}
-.earth{ background:#2ea043; color:white;}
-.anim{ background:#ff9800; color:white;}
 
 .resultado{
     text-align:center;
-    font-size:20px;
-    padding:15px;
+    font-size:34px;
     font-weight:bold;
+    margin:15px 0;
+    color:#00eaff;
+    text-shadow:0 0 20px #00eaff;
 }
 
-.section{
-    width:100%;
-    padding:30px 5%;
-    box-sizing:border-box;
+.graficas-container{
+    display:flex;
+    gap:15px;
+    padding:15px;
+    flex:1;
 }
 
-#grafica{
-    width:100% !important;
-    height:500px !important;
+.grafica-box{
+    flex:1;
+    height:400px;
+    background:#111827;
+    border-radius:12px;
+    display:flex;
+    flex-direction:column;
 }
 
-#threeContainer{
-    width:100%;
-    height:600px;
-    border-radius:10px;
-    overflow:hidden;
-    background:black;
+.titulo-grafica{
+    text-align:center;
+    padding:8px;
+    font-weight:bold;
+    background:linear-gradient(90deg,#00eaff,#0077ff);
+}
+
+canvas,#threeContainer{
+    flex:1;
+}
+
+.divisor{
+    width:3px;
+    background:linear-gradient(#00eaff,#0077ff);
+}
+
+footer{
+    text-align:center;
+    padding:12px;
+    background:#111827;
+    font-size:13px;
+    color:#aaa;
+}
+
+@media(max-width:900px){
+    .graficas-container{
+        flex-direction:column;
+    }
+    .divisor{
+        display:none;
+    }
 }
 </style>
 </head>
-
 <body>
 
-<header>SIMULADOR GRAVITACIONAL EN ESFERA HOMOGÉNEA</header>
+<header>Simulador Gravitacional</header>
 
 <div class="panel">
-    μ <input type="number" id="mu">
-    R <input type="number" id="R">
-    r <input type="number" id="r">
-    <button class="calc" onclick="calcular()">CALCULAR</button>
-    <button class="earth" onclick="usarTierra()">TIERRA 🌍</button>
-    <button class="anim" onclick="toggleAnim()">ANIMAR</button>
-    <select id="modo">
-        <option value="Potencial">Potencial</option>
-        <option value="Gravedad">Gravedad</option>
-    </select>
+ρ (kg/m³): <input id="densidad" type="number">
+R (m): <input id="radio" type="number">
+r (m): <input id="r" type="number">
+r_max (m): <input id="rmax" type="number" value="100000000">
+
+Modo:
+<select id="modo">
+<option>Potencial</option>
+<option>Gravedad</option>
+</select>
+
+Velocidad:
+<input id="velocidad" type="range" min="0.001" max="0.05" step="0.001" value="0.01">
+
+<button onclick="usarTierra()">Valores de la Tierra</button>
+<button onclick="calcular()">Calcular</button>
+<button onclick="toggleAnim()">Animar</button>
 </div>
 
-<div class="resultado" id="resultado">Resultado</div>
-
-<div class="section">
-    <canvas id="grafica"></canvas>
+<div class="resultado" id="resultadoBox">
+Resultado aparecerá aquí
 </div>
 
-<div class="section">
-    <div id="threeContainer"></div>
+<div class="graficas-container">
+<div class="grafica-box">
+<div class="titulo-grafica">Gráfica 2D</div>
+<canvas id="grafica"></canvas>
 </div>
+
+<div class="divisor"></div>
+
+<div class="grafica-box">
+<div class="titulo-grafica">Visualización 3D</div>
+<div id="threeContainer"></div>
+</div>
+</div>
+
+<footer>
+Autor: Jorge Enrique Suarez Silva<br>
+Universidad Francisco Jose de Caldas
+</footer>
 
 <script>
-const G = 6.6742e-11;
-const DENSIDAD_TIERRA = 5514;
-const RADIO_TIERRA = 6378137;
+
+const G = 6.674e-11;
 
 let chart;
+let scene,camera,renderer,sphere,punto,controls;
 let animando=false;
-let r_anim=0;
-let direccion=1;
-let R_global=1;
-let M_global=1;
-let modo_global="Potencial";
+let angulo=0;
+let parametros=null;
 
-let scene,camera,renderer,sphere,punto3D;
-
+/* ===== TIERRA ===== */
 function usarTierra(){
-    mu.value=DENSIDAD_TIERRA;
-    R.value=RADIO_TIERRA;
+    densidad.value=5515;
+    radio.value=6378137;
 }
 
-function calcularValor(r){
-    if(modo_global==="Potencial"){
-        return r<=R_global?
-        -(G*M_global/(2*R_global**3))*(3*R_global**2-r**2):
-        -G*M_global/r;
+/* ===== MASA ===== */
+function masaTotal(rho,R){
+    return (4/3)*Math.PI*Math.pow(R,3)*rho;
+}
+
+/* ===== FUNCIÓN FÍSICA ===== */
+function valorFisico(r,rho,R){
+
+    let M=masaTotal(rho,R);
+
+    if(modo.value==="Gravedad"){
+        if(r===0) return 0;
+        if(r<=R){
+            return (4/3)*Math.PI*G*rho*r;
+        }else{
+            return G*M/(r*r);
+        }
     }else{
-        return r<=R_global?
-        (G*M_global/R_global**3)*r:
-        G*M_global/r**2;
+        if(r<=R){
+            return -(2/3)*Math.PI*G*rho*(3*R*R-r*r);
+        }else{
+            return -G*M/r;
+        }
     }
 }
 
+/* ===== CALCULAR ===== */
 function calcular(){
 
-    let muVal=parseFloat(mu.value);
-    let R=parseFloat(document.getElementById("R").value);
-    let r=parseFloat(document.getElementById("r").value);
-    let modo=document.getElementById("modo").value;
+    const rho=parseFloat(densidad.value);
+    const R=parseFloat(radio.value);
+    const r_val=parseFloat(document.getElementById("r").value);
+    const r_max=parseFloat(rmax.value);
 
-    if(isNaN(muVal)||isNaN(R)||isNaN(r)){
-        resultado.innerText="Error en datos";
+    if(!rho||!R||!r_val||!r_max){
+        alert("Completa los valores");
         return;
     }
 
-    let M=(4/3)*Math.PI*R**3*muVal;
+    parametros={rho,R,r:r_val,r_max};
 
-    R_global=R;
-    M_global=M;
-    modo_global=modo;
-    r_anim=r;
-
-    let datos=[];
-    let valores=[];
-
-    for(let i=1;i<=400;i++){
-        let rr=i*(8*R/400);
-        datos.push(rr);
-        valores.push(calcularValor(rr));
-    }
-
-    let valorActual=calcularValor(r);
-
-    resultado.innerText=
-    (modo==="Potencial"?"V":"g")+
-    "(r) = "+valorActual.toExponential(3);
-
-    crearGrafica(datos,valores,r,valorActual);
-    crearEscena3D(R,r);
+    actualizarResultado(r_val);
+    generarGrafica();
+    crearEscena3D();
 }
 
-function crearGrafica(datos,valores,r,valor){
+/* ===== RESULTADO GRANDE ===== */
+function actualizarResultado(r_actual){
+
+    const {rho,R}=parametros;
+
+    let resultado=valorFisico(r_actual,rho,R);
+
+    if(modo.value==="Gravedad"){
+        resultadoBox.innerHTML=
+        "g(r) = "+resultado.toExponential(5)+" m/s²";
+    }else{
+        resultadoBox.innerHTML=
+        "V(r) = "+resultado.toExponential(5)+" J/kg";
+    }
+}
+
+/* ===== CAMBIO DE MODO AUTOMÁTICO ===== */
+modo.addEventListener("change",()=>{
+    if(parametros){
+        actualizarResultado(parametros.r);
+        generarGrafica();
+    }
+});
+
+/* ===== GRÁFICA ===== */
+function generarGrafica(){
+
+    const {rho,R,r,r_max}=parametros;
+
+    let datos=[],valores=[];
+
+    for(let i=0;i<=800;i++){
+        let x=i*(r_max)/800;
+        datos.push(x);
+        valores.push(valorFisico(x,rho,R));
+    }
 
     if(chart) chart.destroy();
 
@@ -188,124 +260,116 @@ function crearGrafica(datos,valores,r,valor){
         type:"line",
         data:{
             datasets:[
-                {
-                    label:"Función",
-                    data:datos.map((x,i)=>({x:x,y:valores[i]})),
-                    borderColor:"#00eaff",
-                    borderWidth:3,
-                    pointRadius:0
-                },
-                {
-                    type:"scatter",
-                    label:"Punto",
-                    data:[{x:r,y:valor}],
-                    backgroundColor:"#ff4d4d",
-                    pointRadius:7
-                }
-            ]
+            {
+                data:datos.map((x,i)=>({x:x,y:valores[i]})),
+                borderColor:"#00eaff",
+                borderWidth:3,
+                tension:0.25,
+                pointRadius:0
+            },
+            {
+                type:"scatter",
+                data:[{x:r,y:valorFisico(r,rho,R)}],
+                backgroundColor:"#ff0000",
+                pointRadius:7
+            }]
         },
         options:{
+            responsive:true,
+            maintainAspectRatio:false,
             animation:false,
             scales:{
-                x:{type:"linear",title:{display:true,text:"r (m)"}},
-                y:{title:{display:true,text:modo_global}}
-            }
+                x:{type:"linear",max:r_max},
+                y:{}
+            },
+            plugins:{legend:{display:false}}
         }
     });
 }
 
-function toggleAnim(){
-    animando=!animando;
-    if(animando) animar();
-}
+/* ===== ESCENA 3D ===== */
+function crearEscena3D(){
 
-function animar(){
-    if(!animando) return;
+    const {rho,R,r_max}=parametros;
 
-    let velocidad=R_global*0.01;
-    r_anim+=direccion*velocidad;
-
-    if(r_anim>=2*R_global) direccion=-1;
-    if(r_anim<=0) direccion=1;
-
-    let valor=calcularValor(r_anim);
-
-    chart.data.datasets[1].data[0]={x:r_anim,y:valor};
-    chart.update();
-
-    let r_visual=(r_anim/R_global)*5;
-    if(punto3D) punto3D.position.x=r_visual;
-
-    requestAnimationFrame(animar);
-}
-
-/* ================== 3D ESCALADO ================== */
-
-function crearEscena3D(R_real, r_real){
-
-    const container=document.getElementById("threeContainer");
-    container.innerHTML="";
-
-    const ESCALA=5;
+    threeContainer.innerHTML="";
 
     scene=new THREE.Scene();
 
-    camera=new THREE.PerspectiveCamera(
-        60,
-        container.clientWidth/container.clientHeight,
-        0.1,
-        1000
-    );
+    camera=new THREE.PerspectiveCamera(60,
+        threeContainer.clientWidth/threeContainer.clientHeight,
+        0.1,1000);
 
     renderer=new THREE.WebGLRenderer({antialias:true});
-    renderer.setSize(container.clientWidth,container.clientHeight);
-    renderer.setClearColor(0x000000);
-    container.appendChild(renderer.domElement);
+    renderer.setSize(
+        threeContainer.clientWidth,
+        threeContainer.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    threeContainer.appendChild(renderer.domElement);
+
+    controls=new THREE.OrbitControls(camera,renderer.domElement);
 
     const light=new THREE.PointLight(0xffffff,1.5);
     light.position.set(10,10,10);
     scene.add(light);
 
-    const ambient=new THREE.AmbientLight(0x404040);
-    scene.add(ambient);
+    const texture=new THREE.TextureLoader().load(
+        "https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg"
+    );
 
-    const geometry=new THREE.SphereGeometry(ESCALA,64,64);
-    const material=new THREE.MeshPhongMaterial({
-        color:0x2266ff,
-        transparent:true,
-        opacity:0.6
-    });
-
-    sphere=new THREE.Mesh(geometry,material);
+    sphere=new THREE.Mesh(
+        new THREE.SphereGeometry(3,64,64),
+        new THREE.MeshPhongMaterial({map:texture})
+    );
     scene.add(sphere);
 
-    const geoPoint=new THREE.SphereGeometry(ESCALA*0.08,32,32);
-    const matPoint=new THREE.MeshBasicMaterial({color:0xff4d4d});
-    punto3D=new THREE.Mesh(geoPoint,matPoint);
+    punto=new THREE.Mesh(
+        new THREE.SphereGeometry(0.3,32,32),
+        new THREE.MeshBasicMaterial({color:0xff0000})
+    );
+    scene.add(punto);
 
-    let r_visual=(r_real/R_real)*ESCALA;
-    punto3D.position.x=r_visual;
-
-    scene.add(punto3D);
-
-    camera.position.z=ESCALA*4;
+    camera.position.set(8,6,8);
+    angulo=0;
 
     function render(){
+
         requestAnimationFrame(render);
-        sphere.rotation.y+=0.003;
+
+        sphere.rotation.y+=0.002;
+
+        if(animando){
+
+            let vel=parseFloat(velocidad.value);
+            angulo+=vel;
+
+            let r_anim=Math.abs(Math.sin(angulo))*r_max;
+            let escala=6*(r_anim/r_max);
+
+            punto.position.x=escala*Math.cos(angulo);
+            punto.position.z=escala*Math.sin(angulo);
+
+            /* actualizar 2D */
+            chart.data.datasets[1].data[0].x=r_anim;
+            chart.data.datasets[1].data[0].y=
+                valorFisico(r_anim,rho,R);
+            chart.update("none");
+
+            actualizarResultado(r_anim);
+        }
+
+        controls.update();
         renderer.render(scene,camera);
     }
 
     render();
-
-    window.addEventListener("resize",()=>{
-        camera.aspect=container.clientWidth/container.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(container.clientWidth,container.clientHeight);
-    });
 }
+
+/* ===== ANIMAR ===== */
+function toggleAnim(){
+    animando=!animando;
+}
+
 </script>
-
 </body>
-
 </html>
