@@ -13,11 +13,8 @@
 body{
     margin:0;
     background:linear-gradient(180deg,#0a0f1c,#081225);
-    font-family:Arial, Helvetica, sans-serif;
+    font-family:Arial;
     color:white;
-    display:flex;
-    flex-direction:column;
-    min-height:100vh;
 }
 
 header{
@@ -37,7 +34,6 @@ header{
     max-width:500px;
     margin:20px auto;
     border-radius:15px;
-    box-shadow:0 0 20px rgba(0,234,255,0.15);
 }
 
 .grupo{
@@ -57,62 +53,31 @@ header{
     padding:10px;
     border-radius:8px;
     border:none;
-    font-size:14px;
     background:#1e293b;
     color:white;
 }
 
-.grupo input:focus,
-.grupo select:focus{
-    outline:2px solid #00eaff;
-}
-
 .botones{
     display:flex;
-    flex-wrap:wrap;
     gap:10px;
-    justify-content:center;
-    margin-top:10px;
 }
 
 .botones button{
     flex:1;
-    min-width:120px;
     padding:10px;
-    border-radius:8px;
     border:none;
-    font-weight:bold;
+    border-radius:8px;
     background:linear-gradient(90deg,#00eaff,#0077ff);
-    color:black;
+    font-weight:bold;
     cursor:pointer;
-    transition:0.2s;
-}
-
-.botones button:hover{
-    transform:scale(1.05);
 }
 
 /* ===== RESULTADO ===== */
 .resultado{
     text-align:center;
-    font-size:34px;
-    font-weight:bold;
-    margin:20px auto;
+    font-size:28px;
+    margin:15px;
     color:#00eaff;
-    text-shadow:0 0 15px #00eaff;
-    max-width:90%;
-    word-wrap:break-word;
-}
-
-#volverBtn{
-    display:none;
-    margin:10px auto;
-    padding:8px 20px;
-    border-radius:8px;
-    border:none;
-    background:#00eaff;
-    font-weight:bold;
-    cursor:pointer;
 }
 
 /* ===== GRAFICAS ===== */
@@ -120,16 +85,16 @@ header{
     display:flex;
     gap:20px;
     padding:20px;
-    flex:1;
 }
 
 .grafica-box{
     flex:1;
-    height:400px;
+    height:300px;   /* 🔥 ALTURA FIJA */
     background:#111827;
     border-radius:12px;
     display:flex;
     flex-direction:column;
+    position:relative;
 }
 
 .titulo-grafica{
@@ -137,6 +102,24 @@ header{
     padding:8px;
     font-weight:bold;
     background:linear-gradient(90deg,#00eaff,#0077ff);
+}
+
+.expandir{
+    position:absolute;
+    top:8px;
+    right:8px;
+    background:#00eaff;
+    border:none;
+    padding:5px 8px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:12px;
+    font-weight:bold;
+}
+
+#grafica{
+    height:100% !important;
+    width:100% !important;
 }
 
 canvas,#threeContainer{
@@ -148,54 +131,49 @@ canvas,#threeContainer{
     background:linear-gradient(#00eaff,#0077ff);
 }
 
-footer{
-    text-align:center;
-    padding:12px;
+/* ===== MODAL EXPANSION ===== */
+.modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.9);
+    z-index:1000;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+}
+
+.modal-content{
+    width:95%;
+    height:85%;
     background:#111827;
-    font-size:13px;
-    color:#aaa;
+    border-radius:12px;
+    display:flex;
+    flex-direction:column;
+}
+
+.cerrar{
+    background:red;
+    border:none;
+    color:white;
+    padding:6px 10px;
+    margin:10px;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+.modal canvas,
+.modal #threeContainerExpandido{
+    flex:1;
 }
 
 /* ===== MOVIL ===== */
 @media(max-width:768px){
-
-    .panel{
-        margin:15px;
-    }
-
-    .resultado{
-        font-size:26px;
-    }
-
     .graficas-container{
         flex-direction:column;
-        padding:10px;
     }
-
-    .grafica-box{
-        height:260px;
-    }
-
-    #threeContainer{
-        min-height:260px;
-    }
-
     .divisor{
         display:none;
-    }
-
-    #contenidoPrincipal.modo-movil .graficas-container,
-    #contenidoPrincipal.modo-movil .resultado,
-    #contenidoPrincipal.modo-movil #volverBtn{
-        display:none;
-    }
-
-    #contenidoPrincipal.mostrar-resultados .panel{
-        display:none;
-    }
-
-    #contenidoPrincipal.mostrar-resultados #volverBtn{
-        display:block;
     }
 }
 </style>
@@ -203,8 +181,6 @@ footer{
 <body>
 
 <header>Simulador Gravitacional</header>
-
-<div id="contenidoPrincipal">
 
 <div class="panel">
 
@@ -214,7 +190,7 @@ footer{
 </div>
 
 <div class="grupo">
-<label>Radio del planeta R (m)</label>
+<label>Radio R (m)</label>
 <input id="radio" type="number">
 </div>
 
@@ -224,12 +200,12 @@ footer{
 </div>
 
 <div class="grupo">
-<label>Distancia máxima r_max (m)</label>
+<label>r_max (m)</label>
 <input id="rmax" type="number" value="100000000">
 </div>
 
 <div class="grupo">
-<label>Modo de cálculo</label>
+<label>Modo</label>
 <select id="modo">
 <option>Potencial</option>
 <option>Gravedad</option>
@@ -237,12 +213,12 @@ footer{
 </div>
 
 <div class="grupo">
-<label>Velocidad de animación</label>
+<label>Velocidad</label>
 <input id="velocidad" type="range" min="0.001" max="0.05" step="0.001" value="0.01">
 </div>
 
 <div class="botones">
-<button onclick="usarTierra()">Valores de la Tierra</button>
+<button onclick="usarTierra()">Tierra</button>
 <button onclick="calcular()">Calcular</button>
 <button onclick="toggleAnim()">Animar</button>
 </div>
@@ -253,11 +229,11 @@ footer{
 Resultado aparecerá aquí
 </div>
 
-<button id="volverBtn" onclick="volverFormulario()">Volver</button>
-
 <div class="graficas-container">
+
 <div class="grafica-box">
 <div class="titulo-grafica">Gráfica 2D</div>
+<button class="expandir" onclick="expandir2D()">⛶</button>
 <canvas id="grafica"></canvas>
 </div>
 
@@ -265,257 +241,191 @@ Resultado aparecerá aquí
 
 <div class="grafica-box">
 <div class="titulo-grafica">Visualización 3D</div>
+<button class="expandir" onclick="expandir3D()">⛶</button>
 <div id="threeContainer"></div>
 </div>
-</div>
 
 </div>
 
-<footer>
-Autor: Jorge Enrique Suarez Silva<br>
-Universidad Francisco Jose de Caldas
-</footer>
+<!-- MODAL -->
+<div class="modal" id="modal">
+<button class="cerrar" onclick="cerrarModal()">Cerrar</button>
+<div class="modal-content" id="modalContenido"></div>
+</div>
 
 <script>
 
-const G = 6.674e-11;
-
+const G=6.674e-11;
 let chart;
 let scene,camera,renderer,sphere,punto,controls;
+let parametros=null;
 let animando=false;
 let angulo=0;
-let parametros=null;
-
-function esMovil(){
-    return window.innerWidth <= 768;
-}
-
-function activarModoMovil(){
-    if(esMovil()){
-        contenidoPrincipal.classList.add("modo-movil");
-    }
-}
-
-function mostrarResultadosMovil(){
-    if(esMovil()){
-        contenidoPrincipal.classList.remove("modo-movil");
-        contenidoPrincipal.classList.add("mostrar-resultados");
-    }
-}
-
-function volverFormulario(){
-    contenidoPrincipal.classList.remove("mostrar-resultados");
-    contenidoPrincipal.classList.add("modo-movil");
-}
-
-window.addEventListener("load",activarModoMovil);
 
 function usarTierra(){
-    densidad.value=5515;
-    radio.value=6378137;
+densidad.value=5515;
+radio.value=6378137;
 }
 
 function masaTotal(rho,R){
-    return (4/3)*Math.PI*Math.pow(R,3)*rho;
+return (4/3)*Math.PI*Math.pow(R,3)*rho;
 }
 
 function valorFisico(r,rho,R){
-
-    let M=masaTotal(rho,R);
-
-    if(modo.value==="Gravedad"){
-        if(r===0) return 0;
-        if(r<=R){
-            return (4/3)*Math.PI*G*rho*r;
-        }else{
-            return G*M/(r*r);
-        }
-    }else{
-        if(r<=R){
-            return -(2/3)*Math.PI*G*rho*(3*R*R-r*r);
-        }else{
-            return -G*M/r;
-        }
-    }
+let M=masaTotal(rho,R);
+if(modo.value==="Gravedad"){
+if(r<=R) return (4/3)*Math.PI*G*rho*r;
+return G*M/(r*r);
+}else{
+if(r<=R) return -(2/3)*Math.PI*G*rho*(3*R*R-r*r);
+return -G*M/r;
+}
 }
 
 function calcular(){
-
-    const rho=parseFloat(densidad.value);
-    const R=parseFloat(radio.value);
-    const r_val=parseFloat(document.getElementById("r").value);
-    const r_max=parseFloat(rmax.value);
-
-    if(!rho||!R||!r_val||!r_max){
-        alert("Completa los valores");
-        return;
-    }
-
-    parametros={rho,R,r:r_val,r_max};
-
-    actualizarResultado(r_val);
-    generarGrafica();
-    crearEscena3D();
-    mostrarResultadosMovil();
+let rho=parseFloat(densidad.value);
+let R=parseFloat(radio.value);
+let r_val=parseFloat(r.value);
+let r_max=parseFloat(rmax.value);
+if(!rho||!R||!r_val||!r_max){alert("Completa los valores");return;}
+parametros={rho,R,r:r_val,r_max};
+actualizarResultado(r_val);
+generarGrafica();
+crearEscena3D();
 }
 
 function actualizarResultado(r_actual){
-
-    const {rho,R}=parametros;
-    let resultado=valorFisico(r_actual,rho,R);
-
-    if(modo.value==="Gravedad"){
-        resultadoBox.innerHTML=
-        "g(r) = "+resultado.toExponential(5)+" m/s²";
-    }else{
-        resultadoBox.innerHTML=
-        "V(r) = "+resultado.toExponential(5)+" J/kg";
-    }
+let {rho,R}=parametros;
+let resultado=valorFisico(r_actual,rho,R);
+resultadoBox.innerHTML=
+(modo.value==="Gravedad"?"g(r) = ":"V(r) = ")
++resultado.toExponential(5);
 }
 
-modo.addEventListener("change",()=>{
-    if(parametros){
-        actualizarResultado(parametros.r);
-        generarGrafica();
-    }
-});
-
 function generarGrafica(){
+let {rho,R,r,r_max}=parametros;
+let datos=[],valores=[];
+for(let i=0;i<=500;i++){
+let x=i*(r_max)/500;
+datos.push(x);
+valores.push(valorFisico(x,rho,R));
+}
+if(chart) chart.destroy();
 
-    const {rho,R,r,r_max}=parametros;
-
-    let datos=[],valores=[];
-
-    for(let i=0;i<=800;i++){
-        let x=i*(r_max)/800;
-        datos.push(x);
-        valores.push(valorFisico(x,rho,R));
-    }
-
-    if(chart) chart.destroy();
-
-    chart=new Chart(grafica,{
-        type:"line",
-        data:{
-            datasets:[
-            {
-                data:datos.map((x,i)=>({x:x,y:valores[i]})),
-                borderColor:"#00eaff",
-                borderWidth:3,
-                tension:0.25,
-                pointRadius:0
-            },
-            {
-                type:"scatter",
-                data:[{x:r,y:valorFisico(r,rho,R)}],
-                backgroundColor:"#ff0000",
-                pointRadius:7
-            }]
-        },
-        options:{
-            responsive:true,
-            maintainAspectRatio:false,
-            animation:false,
-            scales:{
-                x:{type:"linear",max:r_max},
-                y:{}
-            },
-            plugins:{legend:{display:false}}
-        }
-    });
+chart=new Chart(grafica,{
+type:"line",
+data:{
+datasets:[
+{
+data:datos.map((x,i)=>({x:x,y:valores[i]})),
+borderColor:"#00eaff",
+borderWidth:2,
+pointRadius:0
+},
+{
+type:"scatter",
+data:[{x:r,y:valorFisico(r,rho,R)}],
+backgroundColor:"red",
+pointRadius:6
+}]
+},
+options:{
+responsive:false,
+maintainAspectRatio:false,
+animation:false,
+scales:{
+x:{type:"linear",max:r_max},
+y:{
+min:Math.min(...valores),
+max:Math.max(...valores)
+}
+},
+plugins:{legend:{display:false}}
+}
+});
 }
 
 function crearEscena3D(){
+let {rho,R,r_max}=parametros;
+threeContainer.innerHTML="";
+scene=new THREE.Scene();
+camera=new THREE.PerspectiveCamera(60,1,0.1,1000);
+renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(300,250);
+renderer.setPixelRatio(1);
+threeContainer.appendChild(renderer.domElement);
+controls=new THREE.OrbitControls(camera,renderer.domElement);
 
-    const {rho,R,r_max}=parametros;
+let light=new THREE.PointLight(0xffffff,1.5);
+light.position.set(10,10,10);
+scene.add(light);
 
-    threeContainer.innerHTML="";
+sphere=new THREE.Mesh(
+new THREE.SphereGeometry(3,64,64),
+new THREE.MeshPhongMaterial({color:0x0077ff})
+);
+scene.add(sphere);
 
-    scene=new THREE.Scene();
+camera.position.set(8,6,8);
 
-    camera=new THREE.PerspectiveCamera(60,
-        threeContainer.clientWidth/threeContainer.clientHeight,
-        0.1,1000);
-
-    renderer=new THREE.WebGLRenderer({antialias:true});
-    renderer.setSize(
-        threeContainer.clientWidth,
-        threeContainer.clientHeight);
-
-    renderer.setPixelRatio(
-        esMovil()?1:window.devicePixelRatio
-    );
-
-    threeContainer.appendChild(renderer.domElement);
-
-    window.addEventListener("resize",()=>{
-        camera.aspect=threeContainer.clientWidth/
-                      threeContainer.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(
-            threeContainer.clientWidth,
-            threeContainer.clientHeight);
-    });
-
-    controls=new THREE.OrbitControls(camera,renderer.domElement);
-
-    const light=new THREE.PointLight(0xffffff,1.5);
-    light.position.set(10,10,10);
-    scene.add(light);
-
-    const texture=new THREE.TextureLoader().load(
-        "https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg"
-    );
-
-    sphere=new THREE.Mesh(
-        new THREE.SphereGeometry(3,64,64),
-        new THREE.MeshPhongMaterial({map:texture})
-    );
-    scene.add(sphere);
-
-    punto=new THREE.Mesh(
-        new THREE.SphereGeometry(0.3,32,32),
-        new THREE.MeshBasicMaterial({color:0xff0000})
-    );
-    scene.add(punto);
-
-    camera.position.set(8,6,8);
-    angulo=0;
-
-    function render(){
-
-        requestAnimationFrame(render);
-
-        sphere.rotation.y+=0.002;
-
-        if(animando){
-
-            let vel=parseFloat(velocidad.value);
-            angulo+=vel;
-
-            let r_anim=Math.abs(Math.sin(angulo))*r_max;
-            let escala=6*(r_anim/r_max);
-
-            punto.position.x=escala*Math.cos(angulo);
-            punto.position.z=escala*Math.sin(angulo);
-
-            chart.data.datasets[1].data[0].x=r_anim;
-            chart.data.datasets[1].data[0].y=
-                valorFisico(r_anim,rho,R);
-            chart.update("none");
-
-            actualizarResultado(r_anim);
-        }
-
-        controls.update();
-        renderer.render(scene,camera);
-    }
-
-    render();
+function render(){
+requestAnimationFrame(render);
+sphere.rotation.y+=0.003;
+renderer.render(scene,camera);
+}
+render();
 }
 
-function toggleAnim(){
-    animando=!animando;
+function toggleAnim(){animando=!animando;}
+
+/* ===== EXPANDIR ===== */
+function expandir2D(){
+modal.style.display="flex";
+modalContenido.innerHTML="";
+let nuevoCanvas=document.createElement("canvas");
+nuevoCanvas.style.height="100%";
+nuevoCanvas.style.width="100%";
+modalContenido.appendChild(nuevoCanvas);
+new Chart(nuevoCanvas,chart.config);
+}
+
+function expandir3D(){
+modal.style.display="flex";
+modalContenido.innerHTML="";
+let cont=document.createElement("div");
+cont.id="threeContainerExpandido";
+cont.style.flex="1";
+modalContenido.appendChild(cont);
+
+let escena=new THREE.Scene();
+let cam=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,1000);
+let rend=new THREE.WebGLRenderer({antialias:true});
+rend.setSize(window.innerWidth*0.9,window.innerHeight*0.7);
+cont.appendChild(rend.domElement);
+
+let luz=new THREE.PointLight(0xffffff,1.5);
+luz.position.set(10,10,10);
+escena.add(luz);
+
+let esfera=new THREE.Mesh(
+new THREE.SphereGeometry(3,64,64),
+new THREE.MeshPhongMaterial({color:0x00eaff})
+);
+escena.add(esfera);
+
+cam.position.set(8,6,8);
+
+function anim(){
+requestAnimationFrame(anim);
+esfera.rotation.y+=0.003;
+rend.render(escena,cam);
+}
+anim();
+}
+
+function cerrarModal(){
+modal.style.display="none";
+modalContenido.innerHTML="";
 }
 
 </script>
