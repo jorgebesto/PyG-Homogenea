@@ -159,7 +159,7 @@ header {
 .formula-card:hover { background:var(--accent-dim); }
 .f-zone {
   font-family:'Share Tech Mono',monospace; font-size:9px;
-  letter-spacing:.22em; color:var(--accent); opacity:.65; text-transform:uppercase;
+  letter-spacing:.22em; color:var(--accent); opacity:.65;
   transition:color .4s;
 }
 .f-eq {
@@ -379,7 +379,54 @@ footer {
 </header>
 
 <!-- ══ FORMULA STRIP ══ -->
-
+<div class="formula-strip">
+  <!-- Solid formulas -->
+  <div class="formula-cards" id="formulasSolid">
+    <div class="formula-card">
+      <span class="f-zone">INTERIOR · r &lt; R</span>
+      <span class="f-eq">g(r) = <span class="hi">(4/3)πGρ</span> · r</span>
+      <span class="f-desc">Crece linealmente con r</span>
+    </div>
+    <div class="formula-card">
+      <span class="f-zone">INTERIOR · r &lt; R</span>
+      <span class="f-eq">V(r) = <span class="hi">−(2/3)πGρ</span>(3R²−r²)</span>
+      <span class="f-desc">Parábola hacia el centro</span>
+    </div>
+    <div class="formula-card">
+      <span class="f-zone">EXTERIOR · r &gt; R</span>
+      <span class="f-eq">g(r) = <span class="hi">GM</span> / <span class="hi2">r²</span></span>
+      <span class="f-desc">Inverso al cuadrado</span>
+    </div>
+    <div class="formula-card">
+      <span class="f-zone">EXTERIOR · r &gt; R</span>
+      <span class="f-eq">V(r) = <span class="hi">−GM</span> / <span class="hi2">r</span></span>
+      <span class="f-desc">Equivalente a masa puntual</span>
+    </div>
+  </div>
+  <!-- Shell formulas -->
+  <div class="formula-cards" id="formulasShell" style="display:none">
+    <div class="formula-card">
+      <span class="f-zone">INTERIOR · r &lt; R</span>
+      <span class="f-eq">V<sub>i</sub> = <span class="hi">−GM</span> / <span class="hi2">R</span></span>
+      <span class="f-desc">Constante — no depende de r</span>
+    </div>
+    <div class="formula-card">
+      <span class="f-zone">INTERIOR · r &lt; R</span>
+      <span class="f-eq">g<sub>i</sub> = <span class="hi">0</span></span>
+      <span class="f-desc">Sin fuerza gravitacional interior</span>
+    </div>
+    <div class="formula-card">
+      <span class="f-zone">EXTERIOR · r &gt; R</span>
+      <span class="f-eq">V<sub>e</sub> = <span class="hi">−GM</span> / <span class="hi2">r</span></span>
+      <span class="f-desc">Equivalente a masa puntual</span>
+    </div>
+    <div class="formula-card">
+      <span class="f-zone">EXTERIOR · r &gt; R</span>
+      <span class="f-eq">g<sub>e</sub> = <span class="hi">−GM</span> / <span class="hi2">r²</span></span>
+      <span class="f-desc">Caída con el cuadrado de r</span>
+    </div>
+  </div>
+</div>
 
 <!-- ══ MAIN ══ -->
 <div class="main">
@@ -540,7 +587,7 @@ function valorSolida(r, rho, R){
     if(r === 0) return 0;
     return r <= R ? (4/3)*Math.PI*G*rho*r : G*M/(r*r);
   } else {
-    return r <= R ? -(2/3)*Math.PI*G*rho*(3*R*R - r*r) : -G*M/r;
+    return r <= R ? (2/3)*Math.PI*G*rho*(3*R*R - r*r) : G*M/r;
   }
 }
 
@@ -550,9 +597,9 @@ function valorCascaron(r, rho, R){
   if(modo.value === "Gravedad"){
     if(r === 0) return 0;
     if(r < R)   return 0;
-    if(r >= R)  return -G*M/(r*r);
+    if(r >= R)  return G*M/(r*r);
   } else {
-    return r <= R ? -G*M/R : -G*M/r;
+    return r <= R ? G*M/R : G*M/r;
   }
 }
 
@@ -596,8 +643,8 @@ function setModelo(m){
 
   // zona block (solo cascarón)
   const zb = m === 'shell';
-  document.getElementById('resZonaBlock').style.display = zb ? '' : 'none';
-  document.getElementById('resSepZona').style.display   = zb ? '' : 'none';
+  document.getElementById('resZonaBlock').style.display = parametros ? '' : 'none';
+  document.getElementById('resSepZona').style.display   = parametros ? '' : 'none';
 
   // si ya hay parámetros, recalcular
   if(parametros){
@@ -663,9 +710,14 @@ function actualizarResultado(r_actual){
   document.getElementById('resRadius').textContent = r_actual.toExponential(3);
   document.getElementById('resMasa').textContent   = M.toExponential(3);
 
+  const zb = true;
+  document.getElementById('resZonaBlock').style.display = '';
+  document.getElementById('resSepZona').style.display   = '';
+
+  const zonaEl = document.getElementById('resZona');
+  const descEl = document.getElementById('resZonaDesc');
+
   if(modeloActivo === 'shell'){
-    const zonaEl = document.getElementById('resZona');
-    const descEl = document.getElementById('resZonaDesc');
     if(r_actual < R){
       zonaEl.className = 'zone-tag zone-inner'; zonaEl.textContent = 'INTERIOR';
       descEl.textContent = esGrav ? 'g = 0 (cascarón no ejerce fuerza)' : 'V = −GM/R (constante)';
@@ -676,6 +728,18 @@ function actualizarResultado(r_actual){
       zonaEl.className = 'zone-tag zone-outer'; zonaEl.textContent = 'EXTERIOR';
       descEl.textContent = esGrav ? 'g = −GM/r²' : 'V = −GM/r';
     }
+  } else {
+    if(r_actual < R){
+      zonaEl.className = 'zone-tag zone-inner'; zonaEl.textContent = 'INTERIOR';
+      descEl.textContent = esGrav ? 'g = (4/3)πGρ·r' : 'V = −(2/3)πGρ(3R²−r²)';
+    } else if(r_actual === R){
+      zonaEl.className = 'zone-tag zone-shell'; zonaEl.textContent = 'SUPERFICIE';
+      descEl.textContent = 'r = R';
+    } else {
+      zonaEl.className = 'zone-tag zone-outer'; zonaEl.textContent = 'EXTERIOR';
+      descEl.textContent = esGrav ? 'g = GM/r²' : 'V = −GM/r';
+    }
+  
   }
 }
 
@@ -711,6 +775,13 @@ function generarGrafica(){
             g.addColorStop(0,'rgba(0,212,255,0.18)');
             g.addColorStop(1,'rgba(0,212,255,0.00)'); return g;
           }
+        },
+        {
+          type:'line',
+          data:[{x:R,y:minY-mg*2},{x:R,y:maxY+mg*2}],
+          borderColor:'rgba(255,75,110,0.5)', borderWidth:1.5,
+          borderDash:[5,4], pointRadius:0, fill:false, label:'R',
+          animation:false, parsing:false
         },
         {
           type:'scatter',
@@ -798,6 +869,14 @@ function buildChartOpts(xmax, ymin, ymax, gridC, tickC, bdrC, ttBdr, legend=fals
 /* ═══════════════════════════════════════
    ESCENA 3D — se recrea al cambiar modelo
 ═══════════════════════════════════════ */
+
+// Convierte metros reales a unidades Three.js con escala en 2 tramos:
+//   r=0 → 0 | r=R → 3 (superficie) | r=r_max → 6
+function rToVisual(r_real, R, r_max){
+  if(r_real <= R) return (r_real / R) * 3;
+  return 3 + ((r_real - R) / (r_max - R)) * 3;
+}
+
 function crearEstrellas(){
   const geo = new THREE.BufferGeometry();
   const pos = [];
@@ -861,6 +940,8 @@ function crearEscena3DSolid(){
     new THREE.SphereGeometry(0.22, 32, 32),
     new THREE.MeshBasicMaterial({color:0xff4b6e})
   );
+  const initV = rToVisual(parametros.r, parametros.R, parametros.r_max);
+  punto.position.set(initV, 0, 0);
   scene.add(punto);
 
   // arrows
@@ -896,11 +977,11 @@ function crearEscena3DSolid(){
       const vel = parseFloat(velocidad.value);
       angulo += vel;
       const r_anim = Math.abs(Math.sin(angulo))*r_max;
-      const escala = 6*(r_anim/r_max);
+      const escala = rToVisual(r_anim, R, r_max);
       punto.position.x = escala*Math.cos(angulo);
       punto.position.z = escala*Math.sin(angulo);
-      chart.data.datasets[1].data[0].x = r_anim;
-      chart.data.datasets[1].data[0].y = valorFisico(r_anim, parametros.rho, parametros.R);
+      chart.data.datasets[2].data[0].x = r_anim;
+      chart.data.datasets[2].data[0].y = valorFisico(r_anim, parametros.rho, parametros.R);
       chart.update("none");
       actualizarResultado(r_anim);
     }
@@ -958,8 +1039,8 @@ function crearEscena3DShell(){
     new THREE.MeshBasicMaterial({color:0xff4b6e, transparent:true, opacity:0.18})
   );
   punto.add(halo);
-  const fracR = Math.min(parametros.r / r_max, 1.0);
-  punto.position.set(fracR*6, 0, 0);
+  const fracR = rToVisual(parametros.r, R, r_max);
+  punto.position.set(fracR, 0, 0);
   scene.add(punto);
 
   camera.position.set(0,4,11); camera.lookAt(0,0,0); controls.update();
@@ -972,11 +1053,10 @@ function crearEscena3DShell(){
       const vel = parseFloat(velocidad.value);
       angulo += vel;
       const r_anim = Math.abs(Math.sin(angulo))*r_max;
-      const vR = (r_anim/r_max)*6;
+      const vR = rToVisual(r_anim, R, r_max);
       punto.position.x = vR*Math.cos(angulo);
       punto.position.z = vR*Math.sin(angulo);
-      chart.data.datasets[3].data[0].x = r_anim;
-      chart.data.datasets[3].data[0].y = valorFisico(r_anim, parametros.rho, parametros.R);
+      chart.data.datasets[3].data[0] = {x: r_anim, y: valorFisico(r_anim, parametros.rho, parametros.R)};
       chart.update("none");
       actualizarResultado(r_anim);
     }
@@ -993,15 +1073,17 @@ function toggleAnim(){
   const lbl = animando ? '⏸ PAUSAR' : '▶ ANIMAR';
   document.getElementById('btnAnim').textContent    = lbl;
   document.getElementById('btnAnimMob').textContent = lbl;
-}
 
-window.addEventListener('resize', ()=>{
-  if(!renderer) return;
-  const w = threeContainer.clientWidth, h = threeContainer.clientHeight;
-  if(!w||!h) return;
-  camera.aspect = w/h; camera.updateProjectionMatrix();
-  renderer.setSize(w,h);
-});
+  // Al pausar, restaura el punto al r original
+  if(!animando && parametros && chart){
+    const {rho, R, r} = parametros;
+    const scatterIdx = modeloActivo === 'solid' ? 2 : 3;
+    chart.data.datasets[scatterIdx].data[0].x = r;
+    chart.data.datasets[scatterIdx].data[0].y = valorFisico(r, rho, R);
+    chart.update("none");
+    actualizarResultado(r);
+  }
+}
 </script>
 </body>
 </html>
