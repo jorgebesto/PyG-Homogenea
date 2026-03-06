@@ -4,495 +4,388 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Simulador Gravitacional</title>
-
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
-
 <style>
+/* ══════════════════════════════════════════════
+   VARIABLES — se reemplazan vía clase en <body>
+══════════════════════════════════════════════ */
 :root {
-  --bg:       #04070f;
-  --surface:  rgba(10, 20, 40, 0.75);
-  --border:   rgba(0, 200, 255, 0.18);
-  --cyan:     #00d4ff;
-  --cyan-dim: rgba(0, 212, 255, 0.12);
-  --gold:     #ffc857;
-  --red:      #ff4b6e;
-  --text:     #c8dff0;
-  --muted:    #506070;
-  --glow:     0 0 18px rgba(0,212,255,0.35);
+  --accent:     #00d4ff;
+  --accent-dim: rgba(0,212,255,0.11);
+  --accent-b:   rgba(0,200,255,0.18);
+  --glow:       0 0 18px rgba(0,212,255,0.38);
+  --bg-halo:    rgba(0,100,200,0.12);
+  --grid-c:     rgba(0,212,255,0.04);
+  --btn-p1:     #0066cc;
+  --btn-p2:     #0099ff;
+  --btn-ps:     rgba(0,120,255,0.4);
+  --inner-bg:   rgba(4,12,28,0.92);
+  --inner-c:    rgba(0,212,255,0.4);
+  --chart-grid: rgba(0,212,255,0.07);
+  --chart-tick: #4a7a9b;
+  --chart-bdr:  rgba(0,212,255,0.2);
+  --tt-bdr:     rgba(0,212,255,0.4);
+  --label-c:    var(--accent);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+body.shell {
+  --accent:     #ffaa00;
+  --accent-dim: rgba(255,170,0,0.10);
+  --accent-b:   rgba(255,160,0,0.18);
+  --glow:       0 0 18px rgba(255,170,0,0.42);
+  --bg-halo:    rgba(180,80,0,0.10);
+  --grid-c:     rgba(255,160,0,0.035);
+  --btn-p1:     #cc6600;
+  --btn-p2:     #ff9900;
+  --btn-ps:     rgba(200,100,0,0.4);
+  --inner-bg:   rgba(10,5,0,0.92);
+  --inner-c:    rgba(255,170,0,0.4);
+  --chart-grid: rgba(255,160,0,0.07);
+  --chart-tick: #806040;
+  --chart-bdr:  rgba(255,160,0,0.2);
+  --tt-bdr:     rgba(255,170,0,0.4);
+}
+
+* { box-sizing:border-box; margin:0; padding:0; }
 
 body {
-  background: var(--bg);
+  background: #04070f;
   font-family: 'Exo 2', sans-serif;
-  color: var(--text);
+  color: #c8dff0;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  display: flex; flex-direction: column;
   overflow-x: hidden;
+  transition: --accent .4s;
 }
 
-/* ── GRID BACKGROUND ── */
+/* grid bg */
 body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
+  content:''; position:fixed; inset:0;
   background-image:
-    linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+    linear-gradient(var(--grid-c) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-c) 1px, transparent 1px);
   background-size: 48px 48px;
-  pointer-events: none;
-  z-index: 0;
+  pointer-events:none; z-index:0;
+  transition: background-image .5s;
 }
-
 body::after {
-  content: '';
-  position: fixed;
-  bottom: -200px; left: 50%;
-  transform: translateX(-50%);
-  width: 900px; height: 500px;
-  background: radial-gradient(ellipse, rgba(0,100,200,0.12) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
+  content:''; position:fixed;
+  bottom:-220px; left:50%; transform:translateX(-50%);
+  width:900px; height:500px;
+  background: radial-gradient(ellipse, var(--bg-halo) 0%, transparent 70%);
+  pointer-events:none; z-index:0;
 }
 
 /* ── HEADER ── */
 header {
-  position: relative;
-  z-index: 10;
-  padding: 22px 40px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(0,30,60,0.9) 0%, transparent 100%);
+  position:relative; z-index:10;
+  padding:18px 36px;
+  display:flex; align-items:center; justify-content:space-between; gap:20px;
+  border-bottom: 1px solid var(--accent-b);
+  background: linear-gradient(180deg, rgba(0,15,30,0.95) 0%, transparent 100%);
 }
 
-.header-title {
-  display: flex;
-  flex-direction: column;
+.header-left { display:flex; flex-direction:column; gap:4px; }
+.header-left h1 {
+  font-family:'Orbitron',monospace;
+  font-size:18px; font-weight:800; letter-spacing:.12em;
+  color:#fff; text-shadow:var(--glow);
+  transition: text-shadow .4s;
+}
+.header-left span {
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px; color:var(--accent); letter-spacing:.22em; opacity:.75;
+  transition: color .4s;
 }
 
-.header-title h1 {
-  font-family: 'Orbitron', monospace;
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: #fff;
-  text-shadow: var(--glow);
+/* ── MODEL SWITCH ── */
+.model-switch {
+  display:flex; align-items:center; gap:0;
+  border:1px solid var(--accent-b);
+  border-radius:10px; overflow:hidden;
+  background: rgba(0,0,0,0.4);
+  transition: border-color .4s;
 }
 
-.header-title span {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
-  color: var(--cyan);
-  letter-spacing: 0.2em;
-  opacity: 0.7;
-  margin-top: 3px;
+.sw-btn {
+  padding:9px 20px;
+  font-family:'Orbitron',monospace;
+  font-size:10px; font-weight:600; letter-spacing:.12em;
+  cursor:pointer; border:none; background:transparent;
+  color:#506070; transition:all .25s;
+  position:relative; white-space:nowrap;
 }
+.sw-btn.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  box-shadow: inset 0 0 12px var(--accent-dim);
+}
+.sw-btn:hover:not(.active) { color:#aaa; background:rgba(255,255,255,.04); }
+
+.sw-divider { width:1px; background:var(--accent-b); height:34px; flex-shrink:0; transition:background .4s; }
 
 .header-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 16px;
-  border: 1px solid var(--border);
-  border-radius: 40px;
-  background: var(--cyan-dim);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
-  color: var(--cyan);
-  letter-spacing: 0.15em;
+  display:flex; align-items:center; gap:8px;
+  padding:6px 16px; border:1px solid var(--accent-b); border-radius:40px;
+  background:var(--accent-dim);
+  font-family:'Share Tech Mono',monospace; font-size:10px;
+  color:var(--accent); letter-spacing:.18em;
+  transition: all .4s;
 }
-
 .badge-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--cyan);
-  box-shadow: 0 0 8px var(--cyan);
-  animation: pulse 2s ease-in-out infinite;
+  width:7px; height:7px; border-radius:50%;
+  background:var(--accent); box-shadow:0 0 8px var(--accent);
+  animation:pulse 2s ease-in-out infinite;
+  transition: background .4s, box-shadow .4s;
 }
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
 
-@keyframes pulse {
-  0%,100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: 0.4; transform: scale(0.7); }
+/* ── FORMULA STRIP ── */
+.formula-strip {
+  position:relative; z-index:5;
+  display:flex; border-bottom:1px solid var(--accent-b);
+  background: rgba(5,5,5,0.5); backdrop-filter:blur(8px);
+  transition: border-color .4s;
 }
-
-/* ── MAIN LAYOUT ── */
-.main {
-  position: relative;
-  z-index: 5;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+.formula-cards { display:flex; flex:1; width:100%; }
+.formula-card {
+  flex:1; padding:13px 20px; border-right:1px solid var(--accent-b);
+  display:flex; flex-direction:column; gap:4px; transition:all .25s;
 }
+.formula-card:last-child { border-right:none; }
+.formula-card:hover { background:var(--accent-dim); }
+.f-zone {
+  font-family:'Share Tech Mono',monospace; font-size:9px;
+  letter-spacing:.22em; color:var(--accent); opacity:.65; text-transform:uppercase;
+  transition:color .4s;
+}
+.f-eq {
+  font-family:'Share Tech Mono',monospace; font-size:14px; color:#fff; letter-spacing:.06em;
+}
+.f-eq .hi  { color:var(--accent); transition:color .4s; }
+.f-eq .hi2 { color:#00d4ff; }
+.f-desc { font-size:11px; color:#506070; letter-spacing:.04em; }
 
-/* ── CONTROL PANEL ── */
+/* ── MAIN ── */
+.main { position:relative; z-index:5; flex:1; display:flex; flex-direction:column; }
+
+/* ── CONTROLS ── */
 .control-panel {
-  padding: 24px 32px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  backdrop-filter: blur(12px);
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 20px;
-  align-items: end;
+  padding:22px 32px; border-bottom:1px solid var(--accent-b);
+  background: rgba(10,20,40,0.75); backdrop-filter:blur(12px);
+  display:grid; grid-template-columns:1fr 1fr auto;
+  gap:20px; align-items:end;
+  transition: border-color .4s;
 }
-
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.input-row {
-  display: flex;
-  gap: 14px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  flex: 1;
-}
-
+.input-group { display:flex; flex-direction:column; gap:14px; }
+.input-row   { display:flex; gap:14px; }
+.field       { display:flex; flex-direction:column; gap:5px; flex:1; }
 .field label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  color: var(--cyan);
-  text-transform: uppercase;
-  opacity: 0.8;
+  font-family:'Share Tech Mono',monospace; font-size:10px;
+  letter-spacing:.2em; color:var(--accent); text-transform:uppercase; opacity:.8;
+  transition:color .4s;
 }
-
 .field input, .field select {
-  background: rgba(0,20,40,0.8);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: #fff;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 13px;
-  padding: 8px 12px;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  width: 100%;
+  background:rgba(0,15,35,0.85); border:1px solid var(--accent-b);
+  border-radius:6px; color:#fff;
+  font-family:'Share Tech Mono',monospace; font-size:13px;
+  padding:8px 12px; outline:none;
+  transition:border-color .2s, box-shadow .2s;
+  width:100%;
 }
-
 .field input:focus, .field select:focus {
-  border-color: var(--cyan);
-  box-shadow: 0 0 0 2px rgba(0,212,255,0.1);
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px var(--accent-dim);
 }
-
 .field select {
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2300d4ff'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  padding-right: 28px;
+  cursor:pointer; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 10px center;
+  padding-right:28px;
 }
+.field select option { background:#060c18; }
 
-.field select option { background: #05131f; }
-
-/* velocity slider */
-.slider-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
+.slider-row { display:flex; align-items:center; gap:10px; }
 input[type=range] {
-  -webkit-appearance: none;
-  height: 4px;
-  background: linear-gradient(90deg, var(--cyan) 0%, rgba(0,212,255,0.2) 100%);
-  border-radius: 4px;
-  outline: none;
-  flex: 1;
+  -webkit-appearance:none; height:4px;
+  background:linear-gradient(90deg, var(--accent) 0%, var(--accent-dim) 100%);
+  border-radius:4px; outline:none; flex:1;
+  transition:background .4s;
 }
 input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 14px; height: 14px;
-  border-radius: 50%;
-  background: #fff;
-  border: 2px solid var(--cyan);
-  box-shadow: 0 0 8px var(--cyan);
-  cursor: pointer;
+  -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+  background:#fff; border:2px solid var(--accent);
+  box-shadow:0 0 8px var(--accent); cursor:pointer;
+  transition:border-color .4s, box-shadow .4s;
 }
 
 /* ── BUTTONS ── */
-.btn-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
+.btn-group { display:flex; flex-direction:column; gap:10px; }
 .btn {
-  padding: 10px 22px;
-  border: none;
-  border-radius: 6px;
-  font-family: 'Orbitron', monospace;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
+  padding:10px 22px; border:none; border-radius:6px;
+  font-family:'Orbitron',monospace; font-size:11px; font-weight:600;
+  letter-spacing:.12em; cursor:pointer; transition:all .2s;
+  position:relative; overflow:hidden;
 }
-
-.btn::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(255,255,255,0.08);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.btn:hover::after { opacity: 1; }
+.btn::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,.08);opacity:0;transition:opacity .2s;}
+.btn:hover::after{opacity:1;}
 
 .btn-primary {
-  background: linear-gradient(135deg, #0066cc, #0099ff);
-  color: #fff;
-  box-shadow: 0 0 16px rgba(0,120,255,0.35);
+  background:linear-gradient(135deg, var(--btn-p1), var(--btn-p2));
+  color:#fff; box-shadow:0 0 16px var(--btn-ps);
+  transition: background .4s, box-shadow .4s;
 }
-.btn-primary:hover { box-shadow: 0 0 22px rgba(0,150,255,0.5); transform: translateY(-1px); }
+.btn-primary:hover { box-shadow:0 0 24px var(--btn-ps); transform:translateY(-1px); }
 
-.btn-cyan {
-  background: transparent;
-  border: 1px solid var(--cyan);
-  color: var(--cyan);
-  box-shadow: 0 0 10px rgba(0,212,255,0.15);
+.btn-accent {
+  background:transparent; border:1px solid var(--accent);
+  color:var(--accent); box-shadow:0 0 10px var(--accent-dim);
+  transition:all .4s;
 }
-.btn-cyan:hover { background: var(--cyan-dim); box-shadow: 0 0 18px rgba(0,212,255,0.3); transform: translateY(-1px); }
+.btn-accent:hover { background:var(--accent-dim); box-shadow:0 0 20px var(--accent-dim); transform:translateY(-1px); }
 
 .btn-outline {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
+  background:transparent; border:1px solid rgba(255,255,255,.12); color:#c8dff0;
 }
-.btn-outline:hover { border-color: rgba(0,212,255,0.4); color: #fff; }
+.btn-outline:hover { border-color:var(--accent-b); color:#fff; }
 
 /* ── RESULT BANNER ── */
 .result-banner {
-  display: none;
-  padding: 16px 32px;
-  background: rgba(0,212,255,0.06);
-  border-bottom: 1px solid var(--border);
-  align-items: center;
-  justify-content: space-between;
+  display:none; padding:15px 32px;
+  background:var(--accent-dim); border-bottom:1px solid var(--accent-b);
+  align-items:center; gap:28px; flex-wrap:wrap;
+  transition:background .4s, border-color .4s;
 }
-
-.result-banner.visible { display: flex; }
-
-.result-left {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.result-banner.visible { display:flex; }
+.res-block { display:flex; flex-direction:column; gap:3px; min-width:140px; }
+.res-lbl {
+  font-family:'Share Tech Mono',monospace; font-size:10px;
+  letter-spacing:.2em; color:var(--accent); opacity:.65; text-transform:uppercase;
+  transition:color .4s;
 }
+.res-val { font-family:'Orbitron',monospace; font-size:20px; font-weight:800; letter-spacing:.04em; }
+.res-unit { font-family:'Share Tech Mono',monospace; font-size:11px; color:#506070; letter-spacing:.1em; }
+.res-sep { width:1px; height:44px; background:var(--accent-b); flex-shrink:0; transition:background .4s; }
 
-.result-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  color: var(--cyan);
-  opacity: 0.6;
-  text-transform: uppercase;
+.zone-tag {
+  padding:4px 12px; border-radius:20px;
+  font-family:'Orbitron',monospace; font-size:9px; font-weight:600;
+  letter-spacing:.14em; display:inline-block; margin-top:4px;
 }
-
-.result-value {
-  font-family: 'Orbitron', monospace;
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--cyan);
-  text-shadow: 0 0 20px rgba(0,212,255,0.5);
-  letter-spacing: 0.05em;
-}
-
-.result-sub {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 12px;
-  color: var(--gold);
-  letter-spacing: 0.1em;
-  margin-top: 2px;
-}
-
-.result-sep {
-  width: 1px;
-  height: 50px;
-  background: var(--border);
-}
+.zone-inner { background:rgba(0,255,170,.1); color:#00ffaa; border:1px solid rgba(0,255,170,.3); }
+.zone-outer { background:rgba(255,170,0,.1);  color:#ffaa00; border:1px solid rgba(255,170,0,.3); }
+.zone-shell { background:rgba(255,75,110,.1);  color:#ff4b6e; border:1px solid rgba(255,75,110,.3); }
 
 /* ── CHARTS ── */
 .charts-area {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: 440px;
+  flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:440px;
 }
-
 .chart-panel {
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid var(--border);
-  background: rgba(4, 10, 22, 0.5);
+  display:flex; flex-direction:column;
+  border-right:1px solid var(--accent-b);
+  background:rgba(4,7,18,.55);
+  transition:border-color .4s;
 }
-
-.chart-panel:last-child { border-right: none; }
-
+.chart-panel:last-child { border-right:none; }
 .chart-header {
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(0,212,255,0.04);
+  padding:12px 20px; display:flex; align-items:center; gap:10px;
+  border-bottom:1px solid var(--accent-b);
+  background:var(--accent-dim); transition:all .4s;
 }
-
-.chart-header-icon {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--cyan);
-  box-shadow: 0 0 6px var(--cyan);
-}
-
+.ch-dot { width:8px; height:8px; border-radius:50%; }
 .chart-header h2 {
-  font-family: 'Orbitron', monospace;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  color: var(--cyan);
-  text-transform: uppercase;
+  font-family:'Orbitron',monospace; font-size:11px; font-weight:600;
+  letter-spacing:.18em; color:var(--accent); text-transform:uppercase;
+  transition:color .4s;
 }
+.chart-body { flex:1; position:relative; min-height:0; padding:10px; }
+.chart-body canvas { display:block; }
+#threeContainer { width:100%; height:100%; position:absolute; inset:0; }
 
-.chart-body {
-  flex: 1;
-  position: relative;
-  padding: 10px;
-  min-height: 0;
+.legend-3d {
+  position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
+  display:flex; gap:16px; background:rgba(4,7,18,.85);
+  border:1px solid var(--accent-b); border-radius:8px;
+  padding:6px 16px; z-index:10; pointer-events:none;
+  transition:border-color .4s;
 }
-
-.chart-body canvas, #threeContainer canvas {
-  display: block;
-}
-
-#threeContainer {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  inset: 0;
-}
+.leg-item { display:flex; align-items:center; gap:6px;
+  font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:.1em; color:#8aa; }
+.leg-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
 
 /* ── FOOTER ── */
 footer {
-  position: relative;
-  z-index: 10;
-  padding: 14px 32px;
-  border-top: 1px solid var(--border);
-  background: rgba(4,7,15,0.9);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  position:relative; z-index:10; padding:13px 32px;
+  border-top:1px solid var(--accent-b); background:rgba(4,7,15,.95);
+  display:flex; align-items:center; justify-content:space-between;
+  transition:border-color .4s;
 }
+.footer-name { font-family:'Orbitron',monospace; font-size:11px; font-weight:600; color:#fff; letter-spacing:.08em; }
+.footer-inst  { font-size:11px; color:#506070; letter-spacing:.04em; margin-top:3px; }
+.footer-right { font-family:'Share Tech Mono',monospace; font-size:10px; color:#506070; text-align:right; letter-spacing:.08em; line-height:1.7; }
 
-.footer-left {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
+/* ── MOBILE NAV ── */
+.mobile-nav { display:none; gap:10px; padding:12px 20px; border-bottom:1px solid var(--accent-b); background:rgba(10,20,40,.75); }
 
-.footer-name {
-  font-family: 'Orbitron', monospace;
-  font-size: 11px;
-  font-weight: 600;
-  color: #fff;
-  letter-spacing: 0.08em;
-}
-
-.footer-inst {
-  font-size: 11px;
-  color: var(--muted);
-  letter-spacing: 0.04em;
-}
-
-.footer-right {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
-  color: var(--muted);
-  text-align: right;
-  letter-spacing: 0.08em;
-  line-height: 1.6;
-}
-
-/* ── MOBILE ── */
-.mobile-nav {
-  display: none;
-  gap: 10px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-}
-
-@media(max-width: 768px) {
-  header { padding: 14px 18px; }
-  .header-badge { display: none; }
-  .header-title h1 { font-size: 15px; }
-
-  .control-panel {
-    grid-template-columns: 1fr;
-    padding: 16px 18px;
-    gap: 16px;
-  }
-
-  .input-row { flex-direction: column; }
-
-  .btn-group {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-  .btn { flex: 1; font-size: 9px; padding: 9px 10px; }
-
-  .charts-area {
-    grid-template-columns: 1fr;
-    display: none;
-    min-height: unset;
-  }
-
-  .chart-panel { min-height: 300px; border-right: none; border-bottom: 1px solid var(--border); }
-
-  .result-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .result-sep { display: none; }
-  .result-value { font-size: 20px; }
-
-  .mobile-nav { display: flex; }
-  footer { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .footer-right { text-align: left; }
+@media(max-width:768px){
+  header { padding:13px 16px; flex-wrap:wrap; gap:12px; }
+  .header-badge { display:none; }
+  .header-left h1 { font-size:14px; }
+  .model-switch { width:100%; }
+  .sw-btn { flex:1; text-align:center; font-size:9px; padding:8px 10px; }
+  .formula-strip { display:none; }
+  .control-panel { grid-template-columns:1fr; padding:16px 18px; gap:14px; }
+  .input-row { flex-direction:column; }
+  .btn-group { flex-direction:row; flex-wrap:wrap; }
+  .btn { flex:1; font-size:9px; padding:9px 8px; }
+  .charts-area { grid-template-columns:1fr; display:none; min-height:unset; }
+  .chart-panel { min-height:300px; border-right:none; border-bottom:1px solid var(--accent-b); }
+  .result-banner { padding:12px 16px; gap:12px; }
+  .res-sep { display:none; }
+  .res-val { font-size:17px; }
+  .mobile-nav { display:flex; }
+  footer { flex-direction:column; align-items:flex-start; gap:6px; }
+  .footer-right { text-align:left; }
 }
 </style>
 </head>
-<body>
+<body class="solid">
 
+<!-- ══ HEADER ══ -->
 <header>
-  <div class="header-title">
-    <h1>SIMULADOR GRAVITACIONAL</h1>
-    <span>GEODESIA FÍSICA · CAMPO GRAVITATORIO</span>
+  <div class="header-left">
+    <h1 id="headerTitle">SIMULADOR GRAVITACIONAL</h1>
+    <span id="headerSub">ESFERA HOMOGÉNEA · CAMPO INTERIOR Y EXTERIOR</span>
   </div>
+
+  <!-- MODEL SWITCH -->
+  <div class="model-switch">
+    <button class="sw-btn active" id="swSolid" onclick="setModelo('solid')">
+      ● ESFERA SÓLIDA
+    </button>
+    <div class="sw-divider"></div>
+    <button class="sw-btn" id="swShell" onclick="setModelo('shell')">
+      ○ CASCARÓN ESFÉRICO
+    </button>
+  </div>
+
   <div class="header-badge">
     <div class="badge-dot"></div>
     SISTEMA ACTIVO
   </div>
 </header>
 
+<!-- ══ FORMULA STRIP ══ -->
+
+
+<!-- ══ MAIN ══ -->
 <div class="main">
 
-  <!-- ── CONTROLS ── -->
+  <!-- Controls -->
   <div class="control-panel" id="controlPanel">
-
     <div class="input-group">
       <div class="input-row">
         <div class="field">
@@ -527,9 +420,9 @@ footer {
       <div class="field">
         <label>Velocidad de animación</label>
         <div class="slider-row">
-          <span style="font-family:'Share Tech Mono';font-size:11px;color:var(--muted)">↓</span>
+          <span style="font-family:'Share Tech Mono';font-size:11px;color:#506070">↓</span>
           <input id="velocidad" type="range" min="0.001" max="0.05" step="0.001" value="0.01">
-          <span style="font-family:'Share Tech Mono';font-size:11px;color:var(--muted)">↑</span>
+          <span style="font-family:'Share Tech Mono';font-size:11px;color:#506070">↑</span>
         </div>
       </div>
     </div>
@@ -537,43 +430,49 @@ footer {
     <div class="btn-group">
       <button class="btn btn-outline" onclick="usarTierra()">⊕ TIERRA</button>
       <button class="btn btn-primary" onclick="calcular()">CALCULAR</button>
-      <button class="btn btn-cyan" onclick="toggleAnim()" id="btnAnim">▶ ANIMAR</button>
+      <button class="btn btn-accent" onclick="toggleAnim()" id="btnAnim">▶ ANIMAR</button>
     </div>
-
   </div>
 
-  <!-- ── MOBILE BACK ── -->
+  <!-- Mobile nav -->
   <div class="mobile-nav">
     <button class="btn btn-outline" onclick="volverFormulario()" style="font-size:10px;padding:8px 14px">← VOLVER</button>
-    <button class="btn btn-cyan" onclick="toggleAnim()" style="font-size:10px;padding:8px 14px">▶ ANIMAR</button>
+    <button class="btn btn-accent" onclick="toggleAnim()" id="btnAnimMob" style="font-size:10px;padding:8px 14px">▶ ANIMAR</button>
   </div>
 
-  <!-- ── RESULT BANNER ── -->
+  <!-- Result banner -->
   <div class="result-banner" id="resultadoBox">
-    <div class="result-left">
-      <span class="result-label" id="resLabel">Gravedad</span>
-      <span class="result-value" id="resValue">—</span>
-      <span class="result-sub" id="resUnit">m/s²</span>
+    <div class="res-block">
+      <span class="res-lbl" id="resLabel">Resultado</span>
+      <span class="res-val" id="resValue" style="color:var(--accent)">—</span>
+      <span class="res-unit" id="resUnit">—</span>
     </div>
-    <div class="result-sep"></div>
-    <div class="result-left">
-      <span class="result-label">Radio evaluado</span>
-      <span class="result-value" id="resRadius" style="font-size:18px;color:#fff">—</span>
-      <span class="result-sub" id="resRadiusSub">metros</span>
+    <div class="res-sep"></div>
+    <div class="res-block">
+      <span class="res-lbl">Radio evaluado</span>
+      <span class="res-val" id="resRadius" style="font-size:16px;color:#fff">—</span>
+      <span class="res-unit">metros</span>
     </div>
-    <div class="result-sep"></div>
-    <div class="result-left">
-      <span class="result-label">Masa Total</span>
-      <span class="result-value" id="resMasa" style="font-size:18px;color:var(--gold)">—</span>
-      <span class="result-sub">kg</span>
+    <div class="res-sep"></div>
+    <div class="res-block">
+      <span class="res-lbl">Masa Total M</span>
+      <span class="res-val" id="resMasa" style="font-size:16px;color:#00d4ff">—</span>
+      <span class="res-unit">kg</span>
+    </div>
+    <!-- zona (solo cascarón) -->
+    <div class="res-sep" id="resSepZona" style="display:none"></div>
+    <div class="res-block" id="resZonaBlock" style="display:none">
+      <span class="res-lbl">Zona</span>
+      <span id="resZona" class="zone-tag zone-inner">INTERIOR</span>
+      <span class="res-unit" id="resZonaDesc" style="margin-top:4px">g = 0</span>
     </div>
   </div>
 
-  <!-- ── CHARTS ── -->
+  <!-- Charts -->
   <div class="charts-area" id="graficasContainer">
     <div class="chart-panel">
       <div class="chart-header">
-        <div class="chart-header-icon"></div>
+        <div class="ch-dot" id="dot2d" style="background:var(--accent);box-shadow:0 0 7px var(--accent)"></div>
         <h2>Perfil 2D del Campo</h2>
       </div>
       <div class="chart-body">
@@ -582,11 +481,23 @@ footer {
     </div>
     <div class="chart-panel">
       <div class="chart-header">
-        <div class="chart-header-icon" style="background:var(--gold);box-shadow:0 0 6px var(--gold)"></div>
-        <h2>Visualización 3D</h2>
+        <div class="ch-dot" style="background:#00ffaa;box-shadow:0 0 7px #00ffaa"></div>
+        <h2 id="title3d">Visualización 3D</h2>
       </div>
-      <div class="chart-body">
+      <div class="chart-body" style="padding:0">
         <div id="threeContainer"></div>
+        <!-- legend solid -->
+        <div class="legend-3d" id="legend3dSolid">
+          <div class="leg-item"><div class="leg-dot" style="background:#4488ff"></div>Esfera sólida</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#ff4b6e"></div>Punto r</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#0066ff;opacity:.5"></div>Campo g</div>
+        </div>
+        <!-- legend shell -->
+        <div class="legend-3d" id="legend3dShell" style="display:none">
+          <div class="leg-item"><div class="leg-dot" style="background:#2266ff;opacity:.6;border:1px solid #2266ff"></div>Cascarón</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#0a1428"></div>Interior vacío</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#ff4b6e"></div>Punto r</div>
+        </div>
       </div>
     </div>
   </div>
@@ -594,9 +505,9 @@ footer {
 </div><!-- /.main -->
 
 <footer>
-  <div class="footer-left">
-    <span class="footer-name">JORGE ENRIQUE SUAREZ SILVA</span>
-    <span class="footer-inst">Universidad Distrital Francisco José de Caldas</span>
+  <div>
+    <div class="footer-name">JORGE ENRIQUE SUAREZ SILVA</div>
+    <div class="footer-inst">Universidad Distrital Francisco José de Caldas</div>
   </div>
   <div class="footer-right">
     Desarrollo académico — Geodesia Física<br>
@@ -605,31 +516,107 @@ footer {
 </footer>
 
 <script>
+/* ═══════════════════════════════════════
+   ESTADO GLOBAL
+═══════════════════════════════════════ */
 const G = 6.674e-11;
-let chart, scene, camera, renderer, sphere, punto, controls;
-let animando = false;
-let angulo = 0;
+
+let modeloActivo = 'solid'; // 'solid' | 'shell'
+let chart, scene, camera, renderer, controls;
+let animando = false, angulo = 0;
 let parametros = null;
 let flechas = [];
+let renderLoopRunning = false;
 
-function esMovil(){ return window.innerWidth <= 768; }
-
-function usarTierra(){
-  densidad.value = 5515;
-  radio.value = 6378137;
-}
+/* ── utils ── */
+const esMovil = () => window.innerWidth <= 768;
 
 function masaTotal(rho, R){ return (4/3)*Math.PI*Math.pow(R,3)*rho; }
 
-function valorFisico(r, rho, R){
-  let M = masaTotal(rho, R);
+/* ─── FÍSICA ESFERA SÓLIDA ─── */
+function valorSolida(r, rho, R){
+  const M = masaTotal(rho, R);
   if(modo.value === "Gravedad"){
     if(r === 0) return 0;
     return r <= R ? (4/3)*Math.PI*G*rho*r : G*M/(r*r);
   } else {
-    return r <= R ? -(2/3)*Math.PI*G*rho*(3*R*R-r*r) : -G*M/r;
+    return r <= R ? -(2/3)*Math.PI*G*rho*(3*R*R - r*r) : -G*M/r;
   }
 }
+
+/* ─── FÍSICA CASCARÓN ─── */
+function valorCascaron(r, rho, R){
+  const M = masaTotal(rho, R);
+  if(modo.value === "Gravedad"){
+    if(r === 0) return 0;
+    if(r < R)   return 0;
+    if(r >= R)  return -G*M/(r*r);
+  } else {
+    return r <= R ? -G*M/R : -G*M/r;
+  }
+}
+
+function valorFisico(r, rho, R){
+  return modeloActivo === 'solid'
+    ? valorSolida(r, rho, R)
+    : valorCascaron(r, rho, R);
+}
+
+/* ═══════════════════════════════════════
+   SWITCH DE MODELO
+═══════════════════════════════════════ */
+function setModelo(m){
+  if(modeloActivo === m) return;
+  modeloActivo = m;
+
+  // body class & CSS theme
+  document.body.className = m === 'solid' ? 'solid' : 'shell';
+
+  // switch buttons
+  document.getElementById('swSolid').classList.toggle('active', m === 'solid');
+  document.getElementById('swShell').classList.toggle('active', m === 'shell');
+
+  // header text
+  document.getElementById('headerTitle').textContent =
+    m === 'solid' ? 'SIMULADOR GRAVITACIONAL' : 'CASCARÓN ESFÉRICO';
+  document.getElementById('headerSub').textContent =
+    m === 'solid'
+      ? 'ESFERA HOMOGÉNEA · CAMPO INTERIOR Y EXTERIOR'
+      : 'CAMPO GRAVITACIONAL · CAPA SUPERFICIAL';
+
+  // formula strip
+  document.getElementById('formulasSolid').style.display = m === 'solid' ? 'flex' : 'none';
+  document.getElementById('formulasShell').style.display = m === 'shell' ? 'flex' : 'none';
+
+  // 3D legends
+  document.getElementById('legend3dSolid').style.display = m === 'solid' ? 'flex' : 'none';
+  document.getElementById('legend3dShell').style.display = m === 'shell' ? 'flex' : 'none';
+  document.getElementById('title3d').textContent =
+    m === 'solid' ? 'Visualización 3D' : 'Visualización 3D — Cascarón';
+
+  // zona block (solo cascarón)
+  const zb = m === 'shell';
+  document.getElementById('resZonaBlock').style.display = zb ? '' : 'none';
+  document.getElementById('resSepZona').style.display   = zb ? '' : 'none';
+
+  // si ya hay parámetros, recalcular
+  if(parametros){
+    actualizarResultado(parametros.r);
+    generarGrafica();
+    setTimeout(crearEscena3D, 60);
+  }
+
+  // stop animation on switch
+  animando = false;
+  const lbl = '▶ ANIMAR';
+  document.getElementById('btnAnim').textContent    = lbl;
+  document.getElementById('btnAnimMob').textContent = lbl;
+}
+
+/* ═══════════════════════════════════════
+   ACCIONES COMUNES
+═══════════════════════════════════════ */
+function usarTierra(){ densidad.value = 5515; radio.value = 6378137; }
 
 function calcular(){
   const rho = parseFloat(densidad.value);
@@ -639,14 +626,15 @@ function calcular(){
   if(!rho||!R||!r_val||!r_max){ alert("Completa todos los valores"); return; }
 
   parametros = {rho, R, r:r_val, r_max};
+  angulo = 0;
+  animando = false;
+
   actualizarResultado(r_val);
   generarGrafica();
 
-  // small delay so the container is visible and has real pixel dimensions
-  setTimeout(crearEscena3D, 60);
-
   document.getElementById('graficasContainer').style.display = 'grid';
   document.getElementById('resultadoBox').classList.add('visible');
+  setTimeout(crearEscena3D, 60);
 
   if(esMovil()){
     document.getElementById('controlPanel').style.display = 'none';
@@ -665,119 +653,172 @@ function volverFormulario(){
 
 function actualizarResultado(r_actual){
   const {rho, R} = parametros;
-  let resultado = valorFisico(r_actual, rho, R);
-  let M = masaTotal(rho, R);
+  const val = valorFisico(r_actual, rho, R);
+  const M   = masaTotal(rho, R);
+  const esGrav = modo.value === "Gravedad";
 
-  let esGrav = modo.value === "Gravedad";
   document.getElementById('resLabel').textContent  = esGrav ? 'Gravedad g(r)' : 'Potencial V(r)';
-  document.getElementById('resValue').textContent  = resultado.toExponential(4);
+  document.getElementById('resValue').textContent  = val.toExponential(4);
   document.getElementById('resUnit').textContent   = esGrav ? 'm/s²' : 'J/kg';
   document.getElementById('resRadius').textContent = r_actual.toExponential(3);
   document.getElementById('resMasa').textContent   = M.toExponential(3);
+
+  if(modeloActivo === 'shell'){
+    const zonaEl = document.getElementById('resZona');
+    const descEl = document.getElementById('resZonaDesc');
+    if(r_actual < R){
+      zonaEl.className = 'zone-tag zone-inner'; zonaEl.textContent = 'INTERIOR';
+      descEl.textContent = esGrav ? 'g = 0 (cascarón no ejerce fuerza)' : 'V = −GM/R (constante)';
+    } else if(r_actual === R){
+      zonaEl.className = 'zone-tag zone-shell'; zonaEl.textContent = 'SUPERFICIE';
+      descEl.textContent = 'r = R';
+    } else {
+      zonaEl.className = 'zone-tag zone-outer'; zonaEl.textContent = 'EXTERIOR';
+      descEl.textContent = esGrav ? 'g = −GM/r²' : 'V = −GM/r';
+    }
+  }
 }
 
 modo.addEventListener("change", ()=>{
   if(parametros){ actualizarResultado(parametros.r); generarGrafica(); }
 });
 
+/* ═══════════════════════════════════════
+   GRÁFICA 2D
+═══════════════════════════════════════ */
 function generarGrafica(){
   const {rho, R, r, r_max} = parametros;
-  let datos=[], valores=[];
-  for(let i=0;i<=800;i++){
-    let x = i*(r_max)/800;
-    datos.push(x);
-    valores.push(valorFisico(x, rho, R));
+  const N = 900;
+  let xs = [], ys = [];
+  for(let i = 0; i <= N; i++){
+    let x = 1 + i*(r_max-1)/N;
+    xs.push(x); ys.push(valorFisico(x, rho, R));
   }
-  let minY = Math.min(...valores);
-  let maxY = Math.max(...valores);
-  let margen = (maxY-minY)*0.12;
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const mg = (maxY - minY)*0.13 || 1;
   if(chart) chart.destroy();
 
-  chart = new Chart(grafica, {
-    type: "line",
-    data: {
-      datasets: [
+  if(modeloActivo === 'solid'){
+    chart = new Chart(grafica, {
+      type:'line',
+      data:{datasets:[
         {
-          data: datos.map((x,i)=>({x:x, y:valores[i]})),
-          borderColor: "#00d4ff",
-          borderWidth: 2.5,
-          tension: 0.25,
-          pointRadius: 0,
-          fill: true,
-          backgroundColor: (ctx)=>{
+          data: xs.map((x,i)=>({x, y:ys[i]})),
+          borderColor:'#00d4ff', borderWidth:2.5, tension:0.25,
+          pointRadius:0, fill:true,
+          backgroundColor: ctx=>{
             const g = ctx.chart.ctx.createLinearGradient(0,0,0,ctx.chart.height);
             g.addColorStop(0,'rgba(0,212,255,0.18)');
-            g.addColorStop(1,'rgba(0,212,255,0.00)');
-            return g;
+            g.addColorStop(1,'rgba(0,212,255,0.00)'); return g;
           }
         },
         {
-          type: "scatter",
-          data: [{x: r, y: valorFisico(r, rho, R)}],
-          backgroundColor: "#ff4b6e",
-          borderColor: "#fff",
-          borderWidth: 2,
-          pointRadius: 8,
-          pointHoverRadius: 10,
+          type:'scatter',
+          data:[{x:r, y:valorFisico(r,rho,R)}],
+          backgroundColor:'#ff4b6e', borderColor:'#fff',
+          borderWidth:2, pointRadius:8, pointHoverRadius:11
         }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: false,
-      scales: {
-        x: {
-          type: "linear",
-          max: r_max,
-          grid: { color: "rgba(0,212,255,0.07)" },
-          ticks: { color: "#4a7a9b", font:{ family:"'Share Tech Mono'" }, maxTicksLimit:6 },
-          border: { color: "rgba(0,212,255,0.2)" }
+      ]},
+      options: buildChartOpts(r_max, minY-mg, maxY+mg, 'rgba(0,212,255,0.07)', '#4a7a9b', 'rgba(0,212,255,0.2)', 'rgba(0,212,255,0.4)')
+    });
+  } else {
+    // shell: two colored segments
+    const dsIn  = xs.filter(x=>x<=R).map((x,i)=>({x, y:ys[xs.indexOf(x)]}));
+    const dsOut = xs.filter(x=>x>R) .map((x,i)=>({x, y:ys[xs.findIndex(v=>v===x)]}));
+    // rebuild properly
+    const dsInner=[], dsOuter=[];
+    xs.forEach((x,i)=>{
+      if(x <= R) dsInner.push({x, y:ys[i]});
+      else       dsOuter.push({x, y:ys[i]});
+    });
+
+    chart = new Chart(grafica, {
+      type:'line',
+      data:{datasets:[
+        {
+          data: dsInner, borderColor:'#00ffaa', borderWidth:2.5,
+          tension:0, pointRadius:0, fill:false, label:'Interior'
         },
-        y: {
-          min: minY-margen,
-          max: maxY+margen,
-          grid: { color: "rgba(0,212,255,0.07)" },
-          ticks: { color: "#4a7a9b", font:{ family:"'Share Tech Mono'" }, maxTicksLimit:6 },
-          border: { color: "rgba(0,212,255,0.2)" }
+        {
+          data: dsOuter, borderColor:'#ffaa00', borderWidth:2.5,
+          tension:0.3, pointRadius:0, fill:true,
+          backgroundColor: ctx=>{
+            const g = ctx.chart.ctx.createLinearGradient(0,0,0,ctx.chart.height);
+            g.addColorStop(0,'rgba(255,170,0,0.18)');
+            g.addColorStop(1,'rgba(255,170,0,0.00)'); return g;
+          }, label:'Exterior'
+        },
+        {
+          type:'line',
+          data:[{x:R,y:minY-mg*2},{x:R,y:maxY+mg*2}],
+          borderColor:'rgba(255,75,110,0.5)', borderWidth:1.5,
+          borderDash:[5,4], pointRadius:0, fill:false, label:'R'
+        },
+        {
+          type:'scatter',
+          data:[{x:r, y:valorFisico(r,rho,R)}],
+          backgroundColor:'#ff4b6e', borderColor:'#fff',
+          borderWidth:2, pointRadius:8, pointHoverRadius:11, label:'r'
         }
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: "rgba(4,12,28,0.92)",
-          borderColor: "rgba(0,212,255,0.4)",
-          borderWidth: 1,
-          titleColor: "#00d4ff",
-          bodyColor: "#c8dff0",
-          titleFont: { family: "'Share Tech Mono'" },
-          bodyFont:  { family: "'Share Tech Mono'" }
-        }
-      }
-    }
-  });
+      ]},
+      options: buildChartOpts(r_max, minY-mg, maxY+mg, 'rgba(255,160,0,0.07)', '#806040', 'rgba(255,160,0,0.2)', 'rgba(255,170,0,0.4)', true)
+    });
+  }
 }
 
+function buildChartOpts(xmax, ymin, ymax, gridC, tickC, bdrC, ttBdr, legend=false){
+  return {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    scales:{
+      x:{ type:'linear', max:xmax,
+        grid:{color:gridC}, ticks:{color:tickC,font:{family:"'Share Tech Mono'"},maxTicksLimit:6},
+        border:{color:bdrC}},
+      y:{ min:ymin, max:ymax,
+        grid:{color:gridC}, ticks:{color:tickC,font:{family:"'Share Tech Mono'"},maxTicksLimit:6},
+        border:{color:bdrC}}
+    },
+    plugins:{
+      legend: legend ? {
+        display:true,
+        labels:{color:'#a09080',font:{family:"'Share Tech Mono'",size:10},
+          boxWidth:14, filter:i=>i.text!=='R'}}
+        : {display:false},
+      tooltip:{
+        backgroundColor:modeloActivo==='solid'?'rgba(4,12,28,0.92)':'rgba(10,5,0,0.92)',
+        borderColor:ttBdr, borderWidth:1,
+        titleColor:modeloActivo==='solid'?'#00d4ff':'#ffaa00',
+        bodyColor:'#c8dff0',
+        titleFont:{family:"'Share Tech Mono'"},
+        bodyFont:{family:"'Share Tech Mono'"}
+      }
+    }
+  };
+}
+
+/* ═══════════════════════════════════════
+   ESCENA 3D — se recrea al cambiar modelo
+═══════════════════════════════════════ */
 function crearEstrellas(){
   const geo = new THREE.BufferGeometry();
   const pos = [];
-  for(let i=0;i<4000;i++){
+  for(let i=0;i<3500;i++)
     pos.push((Math.random()-.5)*1000,(Math.random()-.5)*1000,(Math.random()-.5)*1000);
-  }
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
   scene.add(new THREE.Points(geo, new THREE.PointsMaterial({color:0xffffff,size:0.8,sizeAttenuation:true})));
 }
 
 function crearEscena3D(){
   const {rho, R, r_max} = parametros;
-  threeContainer.innerHTML = "";
+  threeContainer.innerHTML = '';
+  flechas = [];
+
   scene = new THREE.Scene();
   crearEstrellas();
 
-  let w = threeContainer.clientWidth  || 350;
-  let h = threeContainer.clientHeight || 300;
+  const w = threeContainer.clientWidth  || 380;
+  const h = threeContainer.clientHeight || 340;
 
-  camera   = new THREE.PerspectiveCamera(60, w/h, 0.1, 1000);
+  camera   = new THREE.PerspectiveCamera(55, w/h, 0.1, 1000);
   renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
   renderer.setSize(w, h);
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -785,123 +826,181 @@ function crearEscena3D(){
   threeContainer.appendChild(renderer.domElement);
 
   controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.06;
-  controls.minDistance = 4;
-  controls.maxDistance = 30;
-  controls.target.set(0, 0, 0);
-  controls.update();
+  controls.enableDamping = true; controls.dampingFactor = 0.06;
+  controls.minDistance = 3; controls.maxDistance = 28;
+  controls.target.set(0,0,0); controls.update();
 
-  const light = new THREE.PointLight(0xffffff, 1.6);
-  light.position.set(10,10,10);
-  scene.add(light);
+  if(modeloActivo === 'solid') crearEscena3DSolid();
+  else                          crearEscena3DShell();
+}
+
+/* ── 3D ESFERA SÓLIDA ── */
+function crearEscena3DSolid(){
+  const {rho, R, r_max} = parametros;
+
+  const pLight = new THREE.PointLight(0xffffff, 1.6);
+  pLight.position.set(10,10,10); scene.add(pLight);
   scene.add(new THREE.AmbientLight(0x112244, 1.2));
 
   const texture = new THREE.TextureLoader().load(
     "https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg"
   );
-
-  sphere = new THREE.Mesh(
+  const sphere = new THREE.Mesh(
     new THREE.SphereGeometry(3, 64, 64),
-    new THREE.MeshPhongMaterial({ map: texture, shininess: 40 })
+    new THREE.MeshPhongMaterial({map:texture, shininess:40})
   );
   scene.add(sphere);
 
-  // Atmosphere glow
   const atmo = new THREE.Mesh(
     new THREE.SphereGeometry(3.18, 32, 32),
-    new THREE.MeshBasicMaterial({
-      color: 0x0055ff,
-      transparent: true,
-      opacity: 0.06,
-      side: THREE.BackSide
-    })
+    new THREE.MeshBasicMaterial({color:0x0055ff, transparent:true, opacity:0.06, side:THREE.BackSide})
   );
   scene.add(atmo);
 
-  punto = new THREE.Mesh(
+  const punto = new THREE.Mesh(
     new THREE.SphereGeometry(0.22, 32, 32),
-    new THREE.MeshBasicMaterial({ color: 0xff4b6e })
+    new THREE.MeshBasicMaterial({color:0xff4b6e})
   );
   scene.add(punto);
 
-  crearCampoFlechas();
-  camera.position.set(0, 4, 12);
-  camera.lookAt(0, 0, 0);
+  // arrows
+  const golden = Math.PI*(3-Math.sqrt(5));
+  for(let i=0;i<220;i++){
+    let y = 1-(i/219)*2, rr = Math.sqrt(1-y*y), theta = golden*i;
+    let pos = new THREE.Vector3(Math.cos(theta)*rr*7, y*7, Math.sin(theta)*rr*7);
+    let dir = pos.clone().normalize().negate();
+    let arrow = new THREE.ArrowHelper(dir, pos, 0.9, 0x0088ff, 0.22, 0.1);
+    arrow.userData = {dir};
+    scene.add(arrow); flechas.push(arrow);
+  }
 
-  function render(){
-    requestAnimationFrame(render);
-    sphere.rotation.y += 0.002;
-    atmo.rotation.y   += 0.001;
-    animarFlechas();
+  camera.position.set(0,4,12); camera.lookAt(0,0,0); controls.update();
+
+  const loop = () => {
+    requestAnimationFrame(loop);
+    sphere.rotation.y += 0.002; atmo.rotation.y += 0.001;
+
+    flechas.forEach(f=>{
+      f.position.addScaledVector(f.userData.dir, 0.014);
+      if(f.position.length() < 3.25){
+        const t=Math.random()*Math.PI, p=Math.random()*Math.PI*2;
+        f.position.set(6*Math.sin(t)*Math.cos(p), 6*Math.sin(t)*Math.sin(p), 6*Math.cos(t));
+        const d = f.position.clone().normalize().negate();
+        f.setDirection(d); f.userData.dir = d;
+      }
+      f.position.applyAxisAngle(new THREE.Vector3(0,1,0), 0.002);
+      f.setDirection(f.position.clone().normalize().negate());
+    });
+
     if(animando){
-      let vel = parseFloat(velocidad.value);
+      const vel = parseFloat(velocidad.value);
       angulo += vel;
-      let r_anim = Math.abs(Math.sin(angulo))*r_max;
-      let escala = 6*(r_anim/r_max);
+      const r_anim = Math.abs(Math.sin(angulo))*r_max;
+      const escala = 6*(r_anim/r_max);
       punto.position.x = escala*Math.cos(angulo);
       punto.position.z = escala*Math.sin(angulo);
       chart.data.datasets[1].data[0].x = r_anim;
-      chart.data.datasets[1].data[0].y = valorFisico(r_anim,rho,R);
+      chart.data.datasets[1].data[0].y = valorFisico(r_anim, parametros.rho, parametros.R);
       chart.update("none");
       actualizarResultado(r_anim);
     }
-    controls.update();
-    renderer.render(scene, camera);
-  }
-  render();
+    controls.update(); renderer.render(scene, camera);
+  };
+  loop();
 }
 
-function crearCampoFlechas(){
-  flechas = [];
-  const golden = Math.PI*(3-Math.sqrt(5));
-  for(let i=0;i<220;i++){
-    let y = 1-(i/219)*2;
-    let r = Math.sqrt(1-y*y);
-    let theta = golden*i;
-    let pos = new THREE.Vector3(Math.cos(theta)*r*7, y*7, Math.sin(theta)*r*7);
-    let dir = pos.clone().normalize().negate();
-    let arrow = new THREE.ArrowHelper(dir, pos, 0.9, 0x0088ff, 0.22, 0.1);
-    arrow.userData = {dir, radioInicial:7};
-    scene.add(arrow);
-    flechas.push(arrow);
-  }
-}
+/* ── 3D CASCARÓN ── */
+function crearEscena3DShell(){
+  const {rho, R, r_max} = parametros;
 
-function animarFlechas(){
-  flechas.forEach(f=>{
-    f.position.addScaledVector(f.userData.dir, 0.014);
-    if(f.position.length() < 3.25){
-      let theta = Math.random()*Math.PI;
-      let phi   = Math.random()*Math.PI*2;
-      f.position.set(
-        6*Math.sin(theta)*Math.cos(phi),
-        6*Math.sin(theta)*Math.sin(phi),
-        6*Math.cos(theta)
-      );
-      let dir = f.position.clone().normalize().negate();
-      f.setDirection(dir);
-      f.userData.dir = dir;
+  const pLight = new THREE.PointLight(0xffddaa, 1.8);
+  pLight.position.set(12,10,8); scene.add(pLight);
+  scene.add(new THREE.AmbientLight(0x221100, 1.4));
+
+  const SHELL_R = 3.0, INNER_R = 2.5;
+
+  // inner void
+  const innerSphere = new THREE.Mesh(
+    new THREE.SphereGeometry(INNER_R, 48, 48),
+    new THREE.MeshPhongMaterial({color:0x0a1428, emissive:0x050a14, transparent:true, opacity:0.92})
+  );
+  scene.add(innerSphere);
+
+  // shell semi-transparent
+  const shellMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(SHELL_R, 64, 64),
+    new THREE.MeshPhongMaterial({color:0x2266ff, emissive:0x001144, transparent:true, opacity:0.22, side:THREE.DoubleSide})
+  );
+  scene.add(shellMesh);
+
+  // wireframe
+  scene.add(new THREE.Mesh(
+    new THREE.SphereGeometry(SHELL_R*1.002, 28, 28),
+    new THREE.MeshBasicMaterial({color:0x3388ff, wireframe:true, transparent:true, opacity:0.13})
+  ));
+
+  // rings
+  const ringGeo = new THREE.TorusGeometry(SHELL_R, 0.035, 16, 120);
+  const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({color:0x55aaff, transparent:true, opacity:0.55}));
+  ring.rotation.x = Math.PI/2; scene.add(ring);
+  const r2 = new THREE.Mesh(ringGeo.clone(), new THREE.MeshBasicMaterial({color:0x3377cc, transparent:true, opacity:0.3}));
+  scene.add(r2);
+  const r3 = new THREE.Mesh(ringGeo.clone(), new THREE.MeshBasicMaterial({color:0x3377cc, transparent:true, opacity:0.3}));
+  r3.rotation.y = Math.PI/2; scene.add(r3);
+
+  // point
+  const punto = new THREE.Mesh(
+    new THREE.SphereGeometry(0.18, 24, 24),
+    new THREE.MeshBasicMaterial({color:0xff4b6e})
+  );
+  const halo = new THREE.Mesh(
+    new THREE.SphereGeometry(0.32, 16, 16),
+    new THREE.MeshBasicMaterial({color:0xff4b6e, transparent:true, opacity:0.18})
+  );
+  punto.add(halo);
+  const fracR = Math.min(parametros.r / r_max, 1.0);
+  punto.position.set(fracR*6, 0, 0);
+  scene.add(punto);
+
+  camera.position.set(0,4,11); camera.lookAt(0,0,0); controls.update();
+
+  const loop = () => {
+    requestAnimationFrame(loop);
+    shellMesh.rotation.y += 0.003; ring.rotation.z += 0.001;
+
+    if(animando){
+      const vel = parseFloat(velocidad.value);
+      angulo += vel;
+      const r_anim = Math.abs(Math.sin(angulo))*r_max;
+      const vR = (r_anim/r_max)*6;
+      punto.position.x = vR*Math.cos(angulo);
+      punto.position.z = vR*Math.sin(angulo);
+      chart.data.datasets[3].data[0].x = r_anim;
+      chart.data.datasets[3].data[0].y = valorFisico(r_anim, parametros.rho, parametros.R);
+      chart.update("none");
+      actualizarResultado(r_anim);
     }
-    f.position.applyAxisAngle(new THREE.Vector3(0,1,0), 0.002);
-    f.setDirection(f.position.clone().normalize().negate());
-  });
+    controls.update(); renderer.render(scene, camera);
+  };
+  loop();
 }
 
+/* ═══════════════════════════════════════
+   ANIMACIÓN & RESIZE
+═══════════════════════════════════════ */
 function toggleAnim(){
   animando = !animando;
-  const btn = document.getElementById('btnAnim');
-  btn.textContent = animando ? '⏸ PAUSAR' : '▶ ANIMAR';
+  const lbl = animando ? '⏸ PAUSAR' : '▶ ANIMAR';
+  document.getElementById('btnAnim').textContent    = lbl;
+  document.getElementById('btnAnimMob').textContent = lbl;
 }
 
 window.addEventListener('resize', ()=>{
   if(!renderer) return;
-  let w = threeContainer.clientWidth;
-  let h = threeContainer.clientHeight;
+  const w = threeContainer.clientWidth, h = threeContainer.clientHeight;
   if(!w||!h) return;
-  camera.aspect = w/h;
-  camera.updateProjectionMatrix();
-  renderer.setSize(w, h);
+  camera.aspect = w/h; camera.updateProjectionMatrix();
+  renderer.setSize(w,h);
 });
 </script>
 </body>
