@@ -91,33 +91,12 @@ width:3px;
 background:linear-gradient(#00eaff,#0077ff);
 }
 
-/* FOOTER MEJORADO (SOLO ESTA PARTE ES NUEVA) */
-
 footer{
-margin-top:auto;
-padding:25px 10px;
-background:#0b1120;
-border-top:1px solid rgba(255,255,255,0.08);
 text-align:center;
-}
-
-.creditos{
-max-width:800px;
-margin:auto;
-line-height:1.6;
-font-size:14px;
-color:#cbd5e1;
-}
-
-.creditos strong{
-color:#00eaff;
-}
-
-.creditos .titulo{
-font-size:16px;
-font-weight:bold;
-margin-bottom:8px;
-color:white;
+padding:12px;
+background:#111827;
+font-size:13px;
+color:#aaa;
 }
 
 .mobile-controls{
@@ -189,7 +168,8 @@ font-weight:bold;
 R (m): <input id="radio" type="number">
 r (m): <input id="r" type="number">
 r_max (m): <input id="rmax" type="number" value="100000000">
-
+</div>
+<div class="2 panel">
 Modo:
 <select id="modo">
 <option>Potencial</option>
@@ -231,39 +211,10 @@ Resultado aparecerá aquí
 </div>
 
 <footer>
-
-<div class="creditos">
-
-<div class="titulo">Simulador Gravitacional</div>
-
-<div>
-<strong>Autor del código:</strong><br>
-Jorge Enrique Suarez Silva
-</div>
-
-<br>
-
-<div>
-<strong>Universidad:</strong><br>
-Universidad Francisco José de Caldas
-</div>
-
-<br>
-
-<div>
-<strong>Asignatura:</strong><br>
-Geodesia Física
-</div>
-
-<br>
-
-<div>
-<strong>Reconocimiento especial:</strong><br>
-Luis Fernando Gómez
-</div>
-
-</div>
-
+Autor: Jorge Enrique Suarez Silva<br>
+Universidad Distrital Francisco José de Caldas<br>
+Desarrollo académico para el área de Geodesia Física<br>
+Reconocimiento a Luis Fernando Gómez por su contribución en este campo
 </footer>
 
 <script>
@@ -276,6 +227,8 @@ let scene,camera,renderer,sphere,punto,controls;
 let animando=false;
 let angulo=0;
 let parametros=null;
+
+let flechas=[];
 
 function esMovil(){
 return window.innerWidth<=768;
@@ -356,9 +309,17 @@ const {rho,R}=parametros;
 let resultado=valorFisico(r_actual,rho,R);
 
 if(modo.value==="Gravedad"){
-resultadoBox.innerHTML="g(r) = "+resultado.toExponential(5)+" m/s²";
+
+resultadoBox.innerHTML=
+"Radio = "+r_actual+" m<br>" +
+"g(r) = "+resultado.toExponential(5)+" m/s²";
+
 }else{
-resultadoBox.innerHTML="V(r) = "+resultado.toExponential(5)+" J/kg";
+
+resultadoBox.innerHTML=
+"Radio = "+r_actual+" m<br>" +
+"V(r) = "+resultado.toExponential(5)+" J/kg";
+
 }
 
 }
@@ -421,7 +382,42 @@ plugins:{legend:{display:false}}
 });
 
 }
+function crearEstrellas(){
 
+const estrellasGeometry = new THREE.BufferGeometry();
+
+const cantidad = 4000;
+const posiciones = [];
+
+for(let i=0;i<cantidad;i++){
+
+let x = (Math.random()-0.5)*1000;
+let y = (Math.random()-0.5)*1000;
+let z = (Math.random()-0.5)*1000;
+
+posiciones.push(x,y,z);
+
+}
+
+estrellasGeometry.setAttribute(
+'position',
+new THREE.Float32BufferAttribute(posiciones,3)
+);
+
+const estrellasMaterial = new THREE.PointsMaterial({
+color:0xffffff,
+size:1,
+sizeAttenuation:true
+});
+
+const estrellas = new THREE.Points(
+estrellasGeometry,
+estrellasMaterial
+);
+
+scene.add(estrellas);
+
+}
 function crearEscena3D(){
 
 const {rho,R,r_max}=parametros;
@@ -429,7 +425,7 @@ const {rho,R,r_max}=parametros;
 threeContainer.innerHTML="";
 
 scene=new THREE.Scene();
-
+crearEstrellas();
 let width=threeContainer.clientWidth;
 let height=threeContainer.clientHeight;
 
@@ -468,6 +464,8 @@ new THREE.MeshBasicMaterial({color:0xff0000})
 
 scene.add(punto);
 
+crearCampoFlechas();
+
 camera.position.set(8,6,8);
 
 function render(){
@@ -475,6 +473,8 @@ function render(){
 requestAnimationFrame(render);
 
 sphere.rotation.y+=0.002;
+
+animarFlechas();
 
 if(animando){
 
@@ -501,6 +501,86 @@ renderer.render(scene,camera);
 }
 
 render();
+
+}
+
+function crearCampoFlechas(){
+
+flechas = [];
+
+let cantidad = 250;
+let radio = 7;
+
+const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+
+for(let i=0;i<cantidad;i++){
+
+let y = 1 - (i/(cantidad-1))*2;
+let r = Math.sqrt(1 - y*y);
+
+let theta = goldenAngle * i;
+
+let x = Math.cos(theta) * r;
+let z = Math.sin(theta) * r;
+
+let posicion = new THREE.Vector3(
+x*radio,
+y*radio,
+z*radio
+);
+
+let direccion = posicion.clone().normalize().negate();
+
+let flecha = new THREE.ArrowHelper(
+direccion,
+posicion,
+1,
+0x0066ff,
+0.2,
+0.1
+);
+
+flecha.userData = {
+dir: direccion,
+radioInicial: radio
+};
+
+scene.add(flecha);
+flechas.push(flecha);
+
+}
+
+}
+function animarFlechas(){
+
+flechas.forEach(f=>{
+
+f.position.addScaledVector(f.userData.dir,0.015);
+
+if(f.position.length()<3.2){
+
+let theta=Math.random()*Math.PI;
+let phi=Math.random()*Math.PI*2;
+
+let radio=6;
+
+let x=radio*Math.sin(theta)*Math.cos(phi);
+let y=radio*Math.sin(theta)*Math.sin(phi);
+let z=radio*Math.cos(theta);
+
+f.position.set(x,y,z);
+
+let dir=f.position.clone().normalize().negate();
+
+f.setDirection(dir);
+f.userData.dir=dir;
+
+}
+
+f.position.applyAxisAngle(new THREE.Vector3(0,1,0),0.002);
+f.setDirection(f.position.clone().normalize().negate());
+
+});
 
 }
 
