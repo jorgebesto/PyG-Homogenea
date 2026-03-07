@@ -49,6 +49,25 @@ body.shell {
   --tt-bdr:     rgba(255,170,0,0.4);
 }
 
+/* ══ NUEVO: tema violeta para cilindro ══ */
+body.cylinder {
+  --accent:     #b44fff;
+  --accent-dim: rgba(180,79,255,0.10);
+  --accent-b:   rgba(160,50,255,0.18);
+  --glow:       0 0 18px rgba(180,79,255,0.42);
+  --bg-halo:    rgba(100,0,180,0.10);
+  --grid-c:     rgba(160,50,255,0.035);
+  --btn-p1:     #7700cc;
+  --btn-p2:     #aa33ff;
+  --btn-ps:     rgba(130,0,220,0.4);
+  --inner-bg:   rgba(8,0,20,0.92);
+  --inner-c:    rgba(160,50,255,0.4);
+  --chart-grid: rgba(160,50,255,0.07);
+  --chart-tick: #706080;
+  --chart-bdr:  rgba(160,50,255,0.2);
+  --tt-bdr:     rgba(160,50,255,0.4);
+}
+
 * { box-sizing:border-box; margin:0; padding:0; }
 
 body {
@@ -335,7 +354,7 @@ footer {
   .header-badge { display:none; }
   .header-left h1 { font-size:14px; }
   .model-switch { width:100%; }
-  .sw-btn { flex:1; text-align:center; font-size:9px; padding:8px 10px; }
+  .sw-btn { flex:1; text-align:center; font-size:9px; padding:8px 6px; }
   .formula-strip { display:none; }
   .control-panel { grid-template-columns:1fr; padding:16px 18px; gap:14px; }
   .input-row { flex-direction:column; }
@@ -361,7 +380,7 @@ footer {
     <span id="headerSub">ESFERA HOMOGÉNEA · CAMPO INTERIOR Y EXTERIOR</span>
   </div>
 
-  <!-- MODEL SWITCH -->
+  <!-- MODEL SWITCH — NUEVO: se agrega tercer botón para cilindro -->
   <div class="model-switch">
     <button class="sw-btn active" id="swSolid" onclick="setModelo('solid')">
       ● ESFERA SÓLIDA
@@ -369,6 +388,11 @@ footer {
     <div class="sw-divider"></div>
     <button class="sw-btn" id="swShell" onclick="setModelo('shell')">
       ○ CASCARÓN ESFÉRICO
+    </button>
+    <!-- ══ NUEVO: botón cilindro ══ -->
+    <div class="sw-divider"></div>
+    <button class="sw-btn" id="swCylinder" onclick="setModelo('cylinder')">
+      ⬡ CILINDRO VERTICAL
     </button>
   </div>
 
@@ -426,6 +450,29 @@ footer {
       <span class="f-desc">Caída con el cuadrado de r</span>
     </div>
   </div>
+  <!-- ══ NUEVO: fórmulas del cilindro vertical ══ -->
+  <div class="formula-cards" id="formulasCylinder" style="display:none">
+    <div class="formula-card">
+      <span class="f-zone">MODELO · CILINDRO VERTICAL HOMOGÉNEO</span>
+      <span class="f-eq" style="font-size:12px">g = <span class="hi">2πGρ</span> · [ L + √(z²+R²) − √((z+L)²+R²) ]</span>
+      <span class="f-desc">Fórmula analítica exacta sobre el eje</span>
+    </div>
+    <div class="formula-card">
+      <span class="f-zone">PARÁMETRO z</span>
+      <span class="f-eq">z = dist. <span class="hi">obs → tope</span></span>
+      <span class="f-desc">Distancia vertical al tope del cilindro</span>
+    </div>
+    <div class="formula-card">
+      <span class="f-zone">PARÁMETRO L</span>
+      <span class="f-eq">L = <span class="hi">altura</span> cilindro</span>
+      <span class="f-desc">Extensión vertical del cuerpo</span>
+    </div>
+    <div class="formula-card">
+      <span class="f-zone">PERFIL g(x) — OFF AXIS</span>
+      <span class="f-eq">g(x) = <span class="hi">∭</span> Gρ·z dV / r³</span>
+      <span class="f-desc">Integración numérica 3D para x ≠ 0</span>
+    </div>
+  </div>
 </div>
 
 <!-- ══ MAIN ══ -->
@@ -434,6 +481,7 @@ footer {
   <!-- Controls -->
   <div class="control-panel" id="controlPanel">
     <div class="input-group">
+      <!-- Fila 1: común a todos los modelos -->
       <div class="input-row">
         <div class="field">
           <label>ρ — Densidad (kg/m³)</label>
@@ -444,7 +492,8 @@ footer {
           <input id="radio" type="number" placeholder="6378137">
         </div>
       </div>
-      <div class="input-row">
+      <!-- Fila 2: esfera sólida y cascarón -->
+      <div class="input-row" id="rowEsfera">
         <div class="field">
           <label>r — Punto de evaluación (m)</label>
           <input id="r" type="number" placeholder="6378137">
@@ -454,10 +503,22 @@ footer {
           <input id="rmax" type="number" value="100000000">
         </div>
       </div>
+      <!-- ══ NUEVO: Fila 2 exclusiva del cilindro ══ -->
+      <div class="input-row" id="rowCilindro" style="display:none">
+        <div class="field">
+          <label>L — Altura del cilindro (m)</label>
+          <input id="alturaCil" type="number" placeholder="1000">
+        </div>
+        <div class="field">
+          <label>z — Prof. tope cilindro (m)</label>
+          <input id="zObs" type="number" placeholder="100">
+        </div>
+      </div>
     </div>
 
     <div class="input-group">
-      <div class="field">
+      <!-- Modo de cálculo — oculto en modo cilindro (solo gravedad) -->
+      <div class="field" id="rowModo">
         <label>Modo de cálculo</label>
         <select id="modo">
           <option>Potencial</option>
@@ -475,7 +536,7 @@ footer {
     </div>
 
     <div class="btn-group">
-      <button class="btn btn-outline" onclick="usarTierra()">⊕ TIERRA</button>
+      <button class="btn btn-outline" onclick="usarTierra()">⊕ PRESET</button>
       <button class="btn btn-primary" onclick="calcular()">CALCULAR</button>
       <button class="btn btn-accent" onclick="toggleAnim()" id="btnAnim">▶ ANIMAR</button>
     </div>
@@ -496,17 +557,19 @@ footer {
     </div>
     <div class="res-sep"></div>
     <div class="res-block">
-      <span class="res-lbl">Radio evaluado</span>
+      <!-- NUEVO: label dinámico según modelo -->
+      <span class="res-lbl" id="resRadiusLbl">Radio evaluado</span>
       <span class="res-val" id="resRadius" style="font-size:16px;color:#fff">—</span>
-      <span class="res-unit">metros</span>
+      <span class="res-unit" id="resRadiusUnit">metros</span>
     </div>
     <div class="res-sep"></div>
     <div class="res-block">
-      <span class="res-lbl">Masa Total M</span>
+      <!-- NUEVO: label dinámico según modelo -->
+      <span class="res-lbl" id="resMasaLbl">Masa Total M</span>
       <span class="res-val" id="resMasa" style="font-size:16px;color:#00d4ff">—</span>
       <span class="res-unit">kg</span>
     </div>
-    <!-- zona (solo cascarón) -->
+    <!-- zona (esfera sólida, cascarón y cilindro) -->
     <div class="res-sep" id="resSepZona" style="display:none"></div>
     <div class="res-block" id="resZonaBlock" style="display:none">
       <span class="res-lbl">Zona</span>
@@ -520,7 +583,8 @@ footer {
     <div class="chart-panel">
       <div class="chart-header">
         <div class="ch-dot" id="dot2d" style="background:var(--accent);box-shadow:0 0 7px var(--accent)"></div>
-        <h2>Perfil 2D del Campo</h2>
+        <!-- NUEVO: título dinámico para el panel 2D -->
+        <h2 id="title2d">Perfil 2D del Campo</h2>
       </div>
       <div class="chart-body">
         <canvas id="grafica"></canvas>
@@ -545,6 +609,12 @@ footer {
           <div class="leg-item"><div class="leg-dot" style="background:#0a1428"></div>Interior vacío</div>
           <div class="leg-item"><div class="leg-dot" style="background:#ff4b6e"></div>Punto r</div>
         </div>
+        <!-- ══ NUEVO: legend cilindro ══ -->
+        <div class="legend-3d" id="legend3dCylinder" style="display:none">
+          <div class="leg-item"><div class="leg-dot" style="background:#8833cc;opacity:.85"></div>Cilindro</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#ff4b6e"></div>Punto obs.</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#b44fff;opacity:.5"></div>Flechas g</div>
+        </div>
       </div>
     </div>
   </div>
@@ -563,12 +633,12 @@ footer {
 </footer>
 
 <script>
-/* ═══════════════════════════════════════
-   ESTADO GLOBAL
-═══════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   ESTADO GLOBAL  (sin cambios respecto al original)
+═══════════════════════════════════════════════════════════════ */
 const G = 6.674e-11;
 
-let modeloActivo = 'solid'; // 'solid' | 'shell'
+let modeloActivo = 'solid'; // 'solid' | 'shell' | 'cylinder'
 let chart, scene, camera, renderer, controls;
 let animando = false, angulo = 0;
 let parametros = null;
@@ -580,7 +650,7 @@ const esMovil = () => window.innerWidth <= 768;
 
 function masaTotal(rho, R){ return (4/3)*Math.PI*Math.pow(R,3)*rho; }
 
-/* ─── FÍSICA ESFERA SÓLIDA ─── */
+/* ─── FÍSICA ESFERA SÓLIDA (sin cambios) ─── */
 function valorSolida(r, rho, R){
   const M = masaTotal(rho, R);
   if(modo.value === "Gravedad"){
@@ -591,7 +661,7 @@ function valorSolida(r, rho, R){
   }
 }
 
-/* ─── FÍSICA CASCARÓN ─── */
+/* ─── FÍSICA CASCARÓN (sin cambios) ─── */
 function valorCascaron(r, rho, R){
   const M = masaTotal(rho, R);
   if(modo.value === "Gravedad"){
@@ -609,65 +679,189 @@ function valorFisico(r, rho, R){
     : valorCascaron(r, rho, R);
 }
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
+   ══ NUEVO ══  FÍSICA DEL CILINDRO VERTICAL
+   g = 2πGρ [ L + √(z²+R²) - √((z+L)²+R²) ]
+   Válida exactamente sobre el eje (x = 0).
+═══════════════════════════════════════════════════════════════ */
+
+/**
+ * Gravedad vertical sobre el eje de un cilindro vertical homogéneo.
+ * @param {number} z   Distancia del observador al tope del cilindro (m)
+ * @param {number} rho Densidad (kg/m³)
+ * @param {number} R   Radio del cilindro (m)
+ * @param {number} L   Altura del cilindro (m)
+ * @returns {number}   g en m/s²
+ */
+function gCilindroAxial(z, rho, R, L){
+  return 2 * Math.PI * G * rho *
+    (L + Math.sqrt(z*z + R*R) - Math.sqrt((z+L)*(z+L) + R*R));
+}
+
+/**
+ * Gravedad vertical off-axis mediante integración numérica 3D.
+ * Divide el cilindro en anillos (r,θ,z) y suma la componente vertical.
+ * Para |x| ≈ 0 redirige a la fórmula analítica.
+ * @param {number} x_obs  Distancia horizontal del observador al eje (m)
+ * @param {number} z0     Distancia vertical del observador al tope (m)
+ * @param {number} rho    Densidad (kg/m³)
+ * @param {number} R      Radio del cilindro (m)
+ * @param {number} L      Altura del cilindro (m)
+ * @returns {number}      g en m/s²
+ */
+function gCilindroOffAxis(x_obs, z0, rho, R, L){
+  if(Math.abs(x_obs) < 1e-6) return gCilindroAxial(z0, rho, R, L);
+
+  const Nr = 14, Nth = 28, Nz = 14; // resolución de la integración
+  const dr  = R / Nr;
+  const dth = (2 * Math.PI) / Nth;
+  const dz  = L / Nz;
+  let sum = 0;
+
+  for(let i = 0; i < Nr; i++){
+    const rc = (i + 0.5) * dr;         // radio del anillo de integración
+    for(let k = 0; k < Nth; k++){
+      const th = (k + 0.5) * dth;
+      const ex = rc * Math.cos(th);    // posición x del elemento de masa
+      const ey = rc * Math.sin(th);    // posición y del elemento de masa
+      for(let j = 0; j < Nz; j++){
+        const zc = z0 + (j + 0.5) * dz;  // profundidad del elemento (positiva = debajo)
+        const dx2 = (x_obs - ex)*(x_obs - ex) + ey*ey; // distancia horizontal²
+        const dist3 = Math.pow(dx2 + zc*zc, 1.5);
+        const dV = rc * dr * dth * dz;   // volumen en cil.: rc·dr·dθ·dz
+        sum += G * rho * zc * dV / dist3; // componente vertical
+      }
+    }
+  }
+  return sum;
+}
+
+/* Buffer del perfil precalculado para no recalcular en cada frame */
+let perfilCilindro = [];  // [{x, g}, ...]
+
+/**
+ * Precalcula el perfil horizontal g(x) del cilindro entre -x_max y +x_max.
+ * Se llama una sola vez al presionar CALCULAR en modo cilindro.
+ */
+function precalcularPerfilCilindro(){
+  const {rho, R, L, z, r_max} = parametros;
+  const N = 80;
+  perfilCilindro = [];
+  for(let i = 0; i <= N; i++){
+    const x = -r_max + i * (2 * r_max / N);
+    perfilCilindro.push({ x, g: gCilindroOffAxis(x, z, rho, R, L) });
+  }
+}
+
+/**
+ * Interpola g(x) desde el perfil precalculado (interpolación lineal).
+ * Usada durante la animación para evitar recalcular la integral.
+ */
+function gCilindroInterp(x_obs){
+  if(!perfilCilindro.length) return 0;
+  const xmax = parametros.r_max;
+  const N    = perfilCilindro.length - 1;
+  const t    = (x_obs + xmax) / (2 * xmax); // normalizado [0,1]
+  const idx  = t * N;
+  const lo   = Math.max(0, Math.floor(idx));
+  const hi   = Math.min(N, lo + 1);
+  return perfilCilindro[lo].g * (1-(idx-lo)) + perfilCilindro[hi].g * (idx-lo);
+}
+
+/* ═══════════════════════════════════════════════════════════════
    SWITCH DE MODELO
-═══════════════════════════════════════ */
+   — Original preservado; se añaden las ramas para 'cylinder'
+═══════════════════════════════════════════════════════════════ */
 function setModelo(m){
   if(modeloActivo === m) return;
+
+  /* Al cambiar entre cilindro y esfera los parámetros son incompatibles;
+     se limpia para evitar errores de referencia */
+  const era_cilindro = (modeloActivo === 'cylinder');
+  const es_cilindro  = (m === 'cylinder');
+  if(era_cilindro !== es_cilindro) parametros = null;
+
   modeloActivo = m;
 
-  // body class & CSS theme
-  document.body.className = m === 'solid' ? 'solid' : 'shell';
+  /* ── CSS tema ── */
+  document.body.className = m === 'solid' ? 'solid' : m === 'shell' ? 'shell' : 'cylinder';
 
-  // switch buttons
-  document.getElementById('swSolid').classList.toggle('active', m === 'solid');
-  document.getElementById('swShell').classList.toggle('active', m === 'shell');
+  /* ── Botones switch ── */
+  document.getElementById('swSolid').classList.toggle('active',    m === 'solid');
+  document.getElementById('swShell').classList.toggle('active',    m === 'shell');
+  document.getElementById('swCylinder').classList.toggle('active', m === 'cylinder');
 
-  // header text
+  /* ── Header ── */
   document.getElementById('headerTitle').textContent =
-    m === 'solid' ? 'SIMULADOR GRAVITACIONAL' : 'CASCARÓN ESFÉRICO';
+    m === 'solid'    ? 'SIMULADOR GRAVITACIONAL' :
+    m === 'shell'    ? 'CASCARÓN ESFÉRICO'        : 'CILINDRO VERTICAL';
   document.getElementById('headerSub').textContent =
-    m === 'solid'
-      ? 'ESFERA HOMOGÉNEA · CAMPO INTERIOR Y EXTERIOR'
-      : 'CAMPO GRAVITACIONAL · CAPA SUPERFICIAL';
+    m === 'solid'    ? 'ESFERA HOMOGÉNEA · CAMPO INTERIOR Y EXTERIOR' :
+    m === 'shell'    ? 'CAMPO GRAVITACIONAL · CAPA SUPERFICIAL'        :
+                       'ANOMALÍA GRAVITACIONAL · PERFIL HORIZONTAL';
 
-  // formula strip
-  document.getElementById('formulasSolid').style.display = m === 'solid' ? 'flex' : 'none';
-  document.getElementById('formulasShell').style.display = m === 'shell' ? 'flex' : 'none';
+  /* ── Fórmulas ── */
+  document.getElementById('formulasSolid').style.display    = m === 'solid'    ? 'flex' : 'none';
+  document.getElementById('formulasShell').style.display    = m === 'shell'    ? 'flex' : 'none';
+  document.getElementById('formulasCylinder').style.display = m === 'cylinder' ? 'flex' : 'none';
 
-  // 3D legends
-  document.getElementById('legend3dSolid').style.display = m === 'solid' ? 'flex' : 'none';
-  document.getElementById('legend3dShell').style.display = m === 'shell' ? 'flex' : 'none';
+  /* ── Leyendas 3D ── */
+  document.getElementById('legend3dSolid').style.display    = m === 'solid'    ? 'flex' : 'none';
+  document.getElementById('legend3dShell').style.display    = m === 'shell'    ? 'flex' : 'none';
+  document.getElementById('legend3dCylinder').style.display = m === 'cylinder' ? 'flex' : 'none';
+
+  /* ── Títulos ── */
   document.getElementById('title3d').textContent =
-    m === 'solid' ? 'Visualización 3D' : 'Visualización 3D — Cascarón';
+    m === 'cylinder' ? 'Visualización 3D — Cilindro' :
+    m === 'shell'    ? 'Visualización 3D — Cascarón'  : 'Visualización 3D';
+  document.getElementById('title2d').textContent =
+    m === 'cylinder' ? 'Anomalía g(x) vs Distancia x' : 'Perfil 2D del Campo';
 
-  // zona block (solo cascarón)
-  const zb = m === 'shell';
+  /* ── Inputs específicos por modelo ── */
+  document.getElementById('rowEsfera').style.display   = m !== 'cylinder' ? '' : 'none';
+  document.getElementById('rowCilindro').style.display = m === 'cylinder' ? '' : 'none';
+  document.getElementById('rowModo').style.display     = m !== 'cylinder' ? '' : 'none';
+
+  /* ── Zona del banner ── */
   document.getElementById('resZonaBlock').style.display = parametros ? '' : 'none';
   document.getElementById('resSepZona').style.display   = parametros ? '' : 'none';
 
-  // si ya hay parámetros, recalcular
+  /* ── Recalcular si hay parámetros válidos ── */
   if(parametros){
-    actualizarResultado(parametros.r);
+    actualizarResultado(es_cilindro ? 0 : parametros.r);
     generarGrafica();
     setTimeout(crearEscena3D, 60);
   }
 
-  // stop animation on switch
+  /* ── Detener animación ── */
   animando = false;
-  const lbl = '▶ ANIMAR';
-  document.getElementById('btnAnim').textContent    = lbl;
-  document.getElementById('btnAnimMob').textContent = lbl;
+  document.getElementById('btnAnim').textContent    = '▶ ANIMAR';
+  document.getElementById('btnAnimMob').textContent = '▶ ANIMAR';
 }
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    ACCIONES COMUNES
-═══════════════════════════════════════ */
-function usarTierra(){ densidad.value = 5515; radio.value = 6378137; }
+═══════════════════════════════════════════════════════════════ */
+function usarTierra(){
+  /* NUEVO: preset diferenciado para cilindro */
+  if(modeloActivo === 'cylinder'){
+    densidad.value  = 2670;  // roca granítica típica (kg/m³)
+    radio.value     = 500;   // radio 500 m
+    alturaCil.value = 1000;  // altura 1 km
+    zObs.value      = 100;   // tope a 100 m de profundidad
+  } else {
+    densidad.value = 5515;
+    radio.value    = 6378137;
+  }
+}
 
 function calcular(){
-  const rho = parseFloat(densidad.value);
-  const R   = parseFloat(radio.value);
+  /* NUEVO: despacho para cilindro */
+  if(modeloActivo === 'cylinder'){ calcularCilindro(); return; }
+
+  /* ── Original esfera / cascarón ── */
+  const rho   = parseFloat(densidad.value);
+  const R     = parseFloat(radio.value);
   const r_val = parseFloat(r.value);
   const r_max = parseFloat(rmax.value);
   if(!rho||!R||!r_val||!r_max){ alert("Completa todos los valores"); return; }
@@ -691,6 +885,41 @@ function calcular(){
   }
 }
 
+/* ══ NUEVO: calcularCilindro ══
+   Lee los campos propios del cilindro, precalcula el perfil y muestra resultados. */
+function calcularCilindro(){
+  const rho = parseFloat(densidad.value);
+  const R   = parseFloat(radio.value);
+  const L   = parseFloat(alturaCil.value);
+  const z0  = parseFloat(zObs.value);
+  if(!rho || !R || !L || isNaN(z0) || z0 < 0){
+    alert("Completa todos los valores. z debe ser ≥ 0."); return;
+  }
+
+  /* x_max del perfil: suficiente para ver la campana completa */
+  const x_max = Math.max(5 * R, 4 * (z0 + L));
+
+  parametros = {rho, R, L, z: z0, r_max: x_max};
+  angulo = 0; animando = false;
+
+  /* Precalcular perfil g(x) — operación costosa, se hace una sola vez */
+  precalcularPerfilCilindro();
+
+  actualizarResultado(0); // mostrar resultado sobre el eje
+  generarGrafica();
+
+  document.getElementById('graficasContainer').style.display = 'grid';
+  document.getElementById('resultadoBox').classList.add('visible');
+  setTimeout(crearEscena3D, 60);
+
+  if(esMovil()){
+    document.getElementById('controlPanel').style.display = 'none';
+    document.querySelector('.mobile-nav').style.display = 'flex';
+    document.getElementById('graficasContainer').style.display = 'flex';
+    document.getElementById('graficasContainer').style.flexDirection = 'column';
+  }
+}
+
 function volverFormulario(){
   document.getElementById('controlPanel').style.display = '';
   document.querySelector('.mobile-nav').style.display = 'none';
@@ -699,6 +928,10 @@ function volverFormulario(){
 }
 
 function actualizarResultado(r_actual){
+  /* NUEVO: despacho para cilindro */
+  if(modeloActivo === 'cylinder'){ actualizarResultadoCilindro(r_actual); return; }
+
+  /* ── Original esfera / cascarón (sin cambios) ── */
   const {rho, R} = parametros;
   const val = valorFisico(r_actual, rho, R);
   const M   = masaTotal(rho, R);
@@ -709,6 +942,10 @@ function actualizarResultado(r_actual){
   document.getElementById('resUnit').textContent   = esGrav ? 'm/s²' : 'J/kg';
   document.getElementById('resRadius').textContent = r_actual.toExponential(3);
   document.getElementById('resMasa').textContent   = M.toExponential(3);
+
+  /* Etiquetas originales */
+  document.getElementById('resRadiusLbl').textContent = 'Radio evaluado';
+  document.getElementById('resMasaLbl').textContent   = 'Masa Total M';
 
   const zb = true;
   document.getElementById('resZonaBlock').style.display = '';
@@ -739,7 +976,46 @@ function actualizarResultado(r_actual){
       zonaEl.className = 'zone-tag zone-outer'; zonaEl.textContent = 'EXTERIOR';
       descEl.textContent = esGrav ? 'g = GM/r²' : 'V = −GM/r';
     }
-  
+  }
+}
+
+/* ══ NUEVO: actualizarResultadoCilindro ══
+   Actualiza el banner de resultados para el modo cilindro.
+   @param {number} x_actual  Posición horizontal actual del punto de observación */
+function actualizarResultadoCilindro(x_actual){
+  const x  = (!isNaN(x_actual)) ? x_actual : 0;
+  const {rho, R, L, z} = parametros;
+
+  /* g en el eje exacto (analítica) o fuera del eje (perfil interpolado) */
+  const gVal = (Math.abs(x) < 1e-6)
+    ? gCilindroAxial(z, rho, R, L)
+    : gCilindroInterp(x);
+
+  /* Masa del cilindro: M = ρ · π · R² · L */
+  const M = rho * Math.PI * R * R * L;
+
+  document.getElementById('resLabel').textContent  = 'Gravedad g(x)';
+  document.getElementById('resValue').textContent  = gVal.toExponential(4);
+  document.getElementById('resUnit').textContent   = 'm/s²';
+  document.getElementById('resRadius').textContent = x.toExponential(3);
+  document.getElementById('resMasa').textContent   = M.toExponential(3);
+
+  /* Etiquetas específicas para cilindro */
+  document.getElementById('resRadiusLbl').textContent = 'Posición x (m)';
+  document.getElementById('resMasaLbl').textContent   = 'Masa cilindro';
+
+  document.getElementById('resZonaBlock').style.display = '';
+  document.getElementById('resSepZona').style.display   = '';
+
+  const zonaEl = document.getElementById('resZona');
+  const descEl = document.getElementById('resZonaDesc');
+
+  if(Math.abs(x) < R){
+    zonaEl.className = 'zone-tag zone-inner'; zonaEl.textContent = 'SOBRE EJE';
+    descEl.textContent = '|x| < R — zona axial máxima';
+  } else {
+    zonaEl.className = 'zone-tag zone-outer'; zonaEl.textContent = 'FUERA EJE';
+    descEl.textContent = '|x| ≥ R — decaimiento lateral';
   }
 }
 
@@ -747,10 +1023,14 @@ modo.addEventListener("change", ()=>{
   if(parametros){ actualizarResultado(parametros.r); generarGrafica(); }
 });
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    GRÁFICA 2D
-═══════════════════════════════════════ */
+═══════════════════════════════════════════════════════════════ */
 function generarGrafica(){
+  /* NUEVO: despacho para cilindro */
+  if(modeloActivo === 'cylinder'){ generarGraficaCilindro(); return; }
+
+  /* ── Original esfera / cascarón (sin cambios) ── */
   const {rho, R, r, r_max} = parametros;
   const N = 900;
   let xs = [], ys = [];
@@ -823,7 +1103,8 @@ function generarGrafica(){
           type:'line',
           data:[{x:R,y:minY-mg*2},{x:R,y:maxY+mg*2}],
           borderColor:'rgba(255,75,110,0.5)', borderWidth:1.5,
-          borderDash:[5,4], pointRadius:0, fill:false, label:'R'
+          borderDash:[5,4], pointRadius:0, fill:false, label:'R',
+          animation:false, parsing:false
         },
         {
           type:'scatter',
@@ -835,6 +1116,87 @@ function generarGrafica(){
       options: buildChartOpts(r_max, minY-mg, maxY+mg, 'rgba(255,160,0,0.07)', '#806040', 'rgba(255,160,0,0.2)', 'rgba(255,170,0,0.4)', true)
     });
   }
+}
+
+/* ══ NUEVO: generarGraficaCilindro ══
+   Crea la gráfica g(x) usando el perfil precalculado.
+   Datasets: [0] curva, [1] línea vertical en x=0, [2] punto actual.   */
+function generarGraficaCilindro(){
+  if(chart) chart.destroy();
+  const {z, R, r_max} = parametros;
+  const gAxial = gCilindroAxial(z, parametros.rho, R, parametros.L);
+
+  const xs  = perfilCilindro.map(p => p.x);
+  const ys  = perfilCilindro.map(p => p.g);
+  const maxY = Math.max(...ys);
+  const mg   = maxY * 0.14 || 1e-10;
+
+  chart = new Chart(grafica, {
+    type: 'line',
+    data: { datasets: [
+      /* [0] Curva del perfil g(x) */
+      {
+        data: xs.map((x,i) => ({x, y: ys[i]})),
+        borderColor: '#b44fff', borderWidth: 2.5, tension: 0.3,
+        pointRadius: 0, fill: true,
+        backgroundColor: ctx => {
+          const grad = ctx.chart.ctx.createLinearGradient(0,0,0,ctx.chart.height);
+          grad.addColorStop(0, 'rgba(180,79,255,0.22)');
+          grad.addColorStop(1, 'rgba(180,79,255,0.00)'); return grad;
+        }, label: 'g(x)'
+      },
+      /* [1] Línea vertical estática en x = 0 (eje del cilindro) */
+      {
+        type: 'line',
+        data: [{x:0, y:0},{x:0, y:maxY+mg*2}],
+        borderColor: 'rgba(0,212,255,0.4)', borderWidth: 1.2,
+        borderDash: [4,4], pointRadius: 0, fill: false, label: 'Eje',
+        animation: false, parsing: false
+      },
+      /* [2] Punto de observación actual (animable) */
+      {
+        type: 'scatter',
+        data: [{x: 0, y: gAxial}],
+        backgroundColor: '#ff4b6e', borderColor: '#fff',
+        borderWidth: 2, pointRadius: 8, pointHoverRadius: 11, label: 'obs'
+      }
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      scales: {
+        x: {
+          type: 'linear', min: -r_max, max: r_max,
+          grid:  { color: 'rgba(160,50,255,0.07)' },
+          ticks: { color: '#706080', font:{family:"'Share Tech Mono'"}, maxTicksLimit:7 },
+          border:{ color: 'rgba(160,50,255,0.2)' },
+          title: { display:true, text:'Distancia horizontal x (m)',
+                   color:'#706080', font:{family:"'Share Tech Mono'",size:10} }
+        },
+        y: {
+          min: 0, max: maxY + mg,
+          grid:  { color: 'rgba(160,50,255,0.07)' },
+          ticks: { color: '#706080', font:{family:"'Share Tech Mono'"}, maxTicksLimit:6 },
+          border:{ color: 'rgba(160,50,255,0.2)' },
+          title: { display:true, text:'g  (m/s²)',
+                   color:'#706080', font:{family:"'Share Tech Mono'",size:10} }
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color:'#9060b0', font:{family:"'Share Tech Mono'",size:10},
+                    boxWidth:14, filter: i => i.text !== 'Eje' }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(8,0,20,0.92)',
+          borderColor: 'rgba(160,50,255,0.4)', borderWidth:1,
+          titleColor:'#b44fff', bodyColor:'#c8dff0',
+          titleFont:{family:"'Share Tech Mono'"},
+          bodyFont: {family:"'Share Tech Mono'"}
+        }
+      }
+    }
+  });
 }
 
 function buildChartOpts(xmax, ymin, ymax, gridC, tickC, bdrC, ttBdr, legend=false){
@@ -866,9 +1228,9 @@ function buildChartOpts(xmax, ymin, ymax, gridC, tickC, bdrC, ttBdr, legend=fals
   };
 }
 
-/* ═══════════════════════════════════════
-   ESCENA 3D — se recrea al cambiar modelo
-═══════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   ESCENA 3D — despacho según modelo activo
+═══════════════════════════════════════════════════════════════ */
 
 // Convierte metros reales a unidades Three.js con escala en 2 tramos:
 //   r=0 → 0 | r=R → 3 (superficie) | r=r_max → 6
@@ -887,7 +1249,6 @@ function crearEstrellas(){
 }
 
 function crearEscena3D(){
-  const {rho, R, r_max} = parametros;
   threeContainer.innerHTML = '';
   flechas = [];
 
@@ -909,11 +1270,13 @@ function crearEscena3D(){
   controls.minDistance = 3; controls.maxDistance = 28;
   controls.target.set(0,0,0); controls.update();
 
-  if(modeloActivo === 'solid') crearEscena3DSolid();
-  else                          crearEscena3DShell();
+  /* NUEVO: despacho para cilindro */
+  if(modeloActivo === 'solid')         crearEscena3DSolid();
+  else if(modeloActivo === 'shell')    crearEscena3DShell();
+  else                                 crearEscena3DCilindro();
 }
 
-/* ── 3D ESFERA SÓLIDA ── */
+/* ── 3D ESFERA SÓLIDA (sin cambios) ── */
 function crearEscena3DSolid(){
   const {rho, R, r_max} = parametros;
 
@@ -990,7 +1353,7 @@ function crearEscena3DSolid(){
   loop();
 }
 
-/* ── 3D CASCARÓN ── */
+/* ── 3D CASCARÓN (sin cambios) ── */
 function crearEscena3DShell(){
   const {rho, R, r_max} = parametros;
 
@@ -1065,25 +1428,201 @@ function crearEscena3DShell(){
   loop();
 }
 
-/* ═══════════════════════════════════════
+/* ══ NUEVO: crearEscena3DCilindro ══
+   Muestra el cilindro enterrado bajo una superficie translúcida.
+   El punto de observación (rojo) se mueve horizontalmente durante la animación.
+   Las flechas de campo gravitacional convergen hacia el eje del cilindro. */
+function crearEscena3DCilindro(){
+  const {rho, R, L, z, r_max} = parametros;
+
+  /* ── Iluminación violeta-cálida ── */
+  const pLight = new THREE.PointLight(0xcc88ff, 2.0);
+  pLight.position.set(8, 10, 6);
+  scene.add(pLight);
+  scene.add(new THREE.AmbientLight(0x110022, 1.8));
+
+  /* ── Grid de superficie ── */
+  const grid = new THREE.GridHelper(14, 14, 0x331155, 0x220033);
+  grid.position.y = 0;
+  scene.add(grid);
+
+  /* ── Plano translúcido de superficie ── */
+  const surfPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(14, 14),
+    new THREE.MeshBasicMaterial({
+      color: 0x110022, transparent: true, opacity: 0.30, side: THREE.DoubleSide
+    })
+  );
+  surfPlane.rotation.x = -Math.PI / 2;
+  scene.add(surfPlane);
+
+  /* ── Cilindro vertical enterrado ──
+     CYL_H y CYL_R son tamaños visuales fijos para que siempre se vea bien,
+     independiente de los valores numéricos reales de L y R. */
+  const CYL_H = 3.2;                    // altura visual del cilindro
+  const CYL_R = 1.3;                    // radio visual del cilindro
+  const CYL_Y = -(CYL_H / 2) - 0.6;   // centro del cilindro bajo la superficie
+
+  /* Cuerpo semitransparente */
+  const cylBody = new THREE.Mesh(
+    new THREE.CylinderGeometry(CYL_R, CYL_R, CYL_H, 48, 1),
+    new THREE.MeshPhongMaterial({
+      color: 0x7722bb, emissive: 0x220044,
+      transparent: true, opacity: 0.55, side: THREE.DoubleSide
+    })
+  );
+  cylBody.position.y = CYL_Y;
+  scene.add(cylBody);
+
+  /* Wireframe para dar profundidad */
+  const cylWire = new THREE.Mesh(
+    new THREE.CylinderGeometry(CYL_R, CYL_R, CYL_H, 16, 1),
+    new THREE.MeshBasicMaterial({
+      color: 0xcc44ff, wireframe: true, transparent: true, opacity: 0.25
+    })
+  );
+  cylWire.position.y = CYL_Y;
+  scene.add(cylWire);
+
+  /* Anillo superior (tope del cilindro) — más brillante para indicar el tope */
+  const ringGeoTop = new THREE.TorusGeometry(CYL_R, 0.055, 12, 64);
+  const ringTop = new THREE.Mesh(ringGeoTop,
+    new THREE.MeshBasicMaterial({ color: 0xdd55ff, transparent: true, opacity: 0.85 })
+  );
+  ringTop.rotation.x = Math.PI / 2;
+  ringTop.position.y = CYL_Y + CYL_H / 2;
+  scene.add(ringTop);
+
+  /* Anillo inferior */
+  const ringBot = ringTop.clone();
+  ringBot.position.y = CYL_Y - CYL_H / 2;
+  scene.add(ringBot);
+
+  /* Línea punteada vertical: profundidad z desde superficie al tope */
+  const dashPts = [
+    new THREE.Vector3(0, 0.02, 0),
+    new THREE.Vector3(0, CYL_Y + CYL_H / 2, 0)
+  ];
+  const dashGeo = new THREE.BufferGeometry().setFromPoints(dashPts);
+  const dashLine = new THREE.Line(dashGeo,
+    new THREE.LineDashedMaterial({
+      color: 0x9944ff, dashSize: 0.18, gapSize: 0.10,
+      transparent: true, opacity: 0.55
+    })
+  );
+  dashLine.computeLineDistances();
+  scene.add(dashLine);
+
+  /* ── Flechas de campo gravitacional ──
+     Dispuestas en anillo alrededor del eje, apuntando al cilindro. */
+
+
+  /* ── Punto de observación (rojo) — se mueve en x durante la animación ── */
+  const obsPoint = new THREE.Mesh(
+    new THREE.SphereGeometry(0.20, 24, 24),
+    new THREE.MeshBasicMaterial({ color: 0xff4b6e })
+  );
+  obsPoint.position.set(0, 0.30, 0);
+  scene.add(obsPoint);
+
+  /* Halo del punto de observación */
+  obsPoint.add(new THREE.Mesh(
+    new THREE.SphereGeometry(0.33, 16, 16),
+    new THREE.MeshBasicMaterial({ color: 0xff4b6e, transparent: true, opacity: 0.20 })
+  ));
+
+  /* Flecha de gravedad hacia abajo desde el punto (indica la dirección de g) */
+  const gArrow = new THREE.ArrowHelper(
+    new THREE.Vector3(0, -1, 0),
+    new THREE.Vector3(0, 0.30, 0),
+    1.05, 0xff4b6e, 0.28, 0.12
+  );
+  scene.add(gArrow);
+
+  /* ── Cámara ── */
+  camera.position.set(7, 5, 9);
+  camera.lookAt(0, -1, 0);
+  controls.target.set(0, -1, 0);
+  controls.update();
+
+  /* ── Render loop ── */
+  const loop = () => {
+    requestAnimationFrame(loop);
+
+    /* Rotación lenta del cilindro para efecto visual */
+    cylBody.rotation.y += 0.004;
+    cylWire.rotation.y += 0.004;
+
+    /* Pulsación suave del anillo superior */
+    const pulse = 0.92 + 0.08 * Math.sin(Date.now() * 0.003);
+    ringTop.scale.set(pulse, pulse, pulse);
+
+    if(animando){
+      const vel = parseFloat(velocidad.value);
+      angulo += vel;
+
+      /* x oscila entre -r_max y +r_max (en metros) */
+      const x_anim = Math.sin(angulo) * r_max;
+
+      /* Escala visual: ±r_max → ±6 unidades Three.js */
+      const x_vis  = Math.sin(angulo) * 6.0;
+
+      /* Mover el punto y la flecha */
+      obsPoint.position.x = x_vis;
+      gArrow.position.x   = x_vis;
+
+      /* Actualizar gráfica 2D con el punto actual */
+      const g_anim = (Math.abs(x_anim) < 1e-6)
+        ? gCilindroAxial(z, rho, R, L)
+        : gCilindroInterp(x_anim);
+      chart.data.datasets[2].data[0] = {x: x_anim, y: g_anim};
+      chart.update("none");
+      actualizarResultado(x_anim);
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+  };
+  loop();
+}
+
+/* ═══════════════════════════════════════════════════════════════
    ANIMACIÓN & RESIZE
-═══════════════════════════════════════ */
+═══════════════════════════════════════════════════════════════ */
 function toggleAnim(){
   animando = !animando;
   const lbl = animando ? '⏸ PAUSAR' : '▶ ANIMAR';
   document.getElementById('btnAnim').textContent    = lbl;
   document.getElementById('btnAnimMob').textContent = lbl;
 
-  // Al pausar, restaura el punto al r original
+  /* Al pausar, restaura el punto a la posición original */
   if(!animando && parametros && chart){
     const {rho, R, r} = parametros;
-    const scatterIdx = modeloActivo === 'solid' ? 2 : 3;
-    chart.data.datasets[scatterIdx].data[0].x = r;
-    chart.data.datasets[scatterIdx].data[0].y = valorFisico(r, rho, R);
-    chart.update("none");
-    actualizarResultado(r);
+
+    if(modeloActivo === 'cylinder'){
+      /* Cilindro: vuelve al eje (x = 0) */
+      const g0 = gCilindroAxial(parametros.z, rho, R, parametros.L);
+      chart.data.datasets[2].data[0] = {x: 0, y: g0};
+      chart.update("none");
+      actualizarResultado(0);
+    } else {
+      /* Esfera sólida / cascarón */
+      const scatterIdx = modeloActivo === 'solid' ? 2 : 3;
+      chart.data.datasets[scatterIdx].data[0].x = r;
+      chart.data.datasets[scatterIdx].data[0].y = valorFisico(r, rho, R);
+      chart.update("none");
+      actualizarResultado(r);
+    }
   }
 }
+
+window.addEventListener('resize', ()=>{
+  if(!renderer) return;
+  const w = threeContainer.clientWidth, h = threeContainer.clientHeight;
+  if(!w||!h) return;
+  camera.aspect = w/h; camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+});
 </script>
 </body>
 </html>
